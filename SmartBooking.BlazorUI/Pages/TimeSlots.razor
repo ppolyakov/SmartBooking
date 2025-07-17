@@ -1,0 +1,90 @@
+﻿@page "/timeslots"
+@using SmartBooking.BlazorUI.Models
+@using SmartBooking.BlazorUI.Services
+@inject ITimeSlotsService TimeSlotService
+@inject ISnackbar Snackbar
+@inject NavigationManager Nav
+
+<MudPaper Class="p-4">
+    <MudText Typo="Typo.h5" Class="mb-4">Available Time Slots</MudText>
+
+    @if (_slots is null)
+    {
+        <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (_slots.Count == 0)
+    {
+        <MudText>No time slots available.</MudText>
+    }
+    else
+    {
+        <MudTable Items="_slots" Dense="true" Hover="true">
+            <HeaderContent>
+                <MudTh>Start Time</MudTh>
+                <MudTh>Service</MudTh>
+                <MudTh>Status</MudTh>
+                <MudTh>Action</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>@context.StartTime.ToString("g")</MudTd>
+                <MudTd>@context.ServiceTitle</MudTd>
+                <MudTd>
+                    @if (context.IsBooked)
+                    {
+                        <MudChip T="string" Color="Color.Error">Booked</MudChip>
+                    }
+                    else
+                    {
+                        <MudChip T="string" Color="Color.Success">Available</MudChip>
+                    }
+                </MudTd>
+                <MudTd>
+                    @if (!context.IsBooked)
+                    {
+                        <MudButton Size="Size.Small" Color="Color.Primary" OnClick="@(() => BookSlot(context.Id))">
+                            Book
+                        </MudButton>
+                    }
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    }
+</MudPaper>
+
+@code {
+    private List<TimeSlotDto>? _slots;
+
+    private Guid? _clientId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var uri = Nav.ToAbsoluteUri(Nav.Uri);
+        if (Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query).TryGetValue("clientId", out var clientIdStr) &&
+            Guid.TryParse(clientIdStr, out var parsedId))
+        {
+            _clientId = parsedId;
+        }
+
+        _slots = await TimeSlotService.GetTimeSlotsAsync();
+    }
+
+    private async Task BookSlot(Guid slotId)
+    {
+        if (_clientId == null)
+        {
+            Snackbar.Add("Please enter your details first.", Severity.Warning);
+            return;
+        }
+
+        var success = await TimeSlotService.BookSlotAsync(slotId, _clientId.Value);
+        if (success)
+        {
+            Snackbar.Add("Booking successful!", Severity.Success);
+            _slots = await TimeSlotService.GetTimeSlotsAsync();
+        }
+        else
+        {
+            Snackbar.Add("Booking failed.", Severity.Error);
+        }
+    }
+}

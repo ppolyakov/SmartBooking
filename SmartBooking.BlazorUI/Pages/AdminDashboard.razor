@@ -1,0 +1,70 @@
+﻿@page "/admin"
+@using SmartBooking.BlazorUI.Models
+@using SmartBooking.BlazorUI.Services
+@inject IServiceService ServiceService
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+
+<MudPaper Class="p-4">
+    <MudText Typo="Typo.h5" Class="mb-4">Admin Dashboard</MudText>
+
+    <MudButton Color="Color.Primary" OnClick="AddNewService">Add New Service</MudButton>
+
+    <MudTable Items="_services" Hover="true" Dense="true" Class="mt-4">
+        <HeaderContent>
+            <MudTh>Title</MudTh>
+            <MudTh>Duration (min)</MudTh>
+            <MudTh>Actions</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.Title</MudTd>
+            <MudTd>@context.Duration.TotalMinutes</MudTd>
+            <MudTd>
+                @if (_generatingServiceId == context.Id)
+                {
+                    <MudProgressCircular Indeterminate="true" Size="Size.Medium" />
+                }
+                else
+                {
+                    <MudButton Size="Size.Small" Color="Color.Info" OnClick="() => GenerateSlots(context.Id)">
+                        Generate Slots
+                    </MudButton>
+                }
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudPaper>
+
+@code {
+    private List<ServiceDto> _services = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _services = await ServiceService.GetAllServicesAsync();
+    }
+
+    private void AddNewService()
+    {
+        Nav.NavigateTo("/admin/new-service");
+    }
+
+    private Guid? _generatingServiceId;
+
+    private async Task GenerateSlots(Guid serviceId)
+    {
+        _generatingServiceId = serviceId;
+
+        var success = await ServiceService.GenerateSlotsAsync(serviceId, DateTime.Today);
+
+        _generatingServiceId = null;
+
+        if (success)
+        {
+            Snackbar.Add("Time slots generated successfully!", Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add("Failed to generate time slots.", Severity.Error);
+        }
+    }
+}
