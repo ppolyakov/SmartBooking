@@ -3,19 +3,14 @@ using SmartBooking.BlazorUI.Services.Interfaces;
 
 namespace SmartBooking.BlazorUI.Services;
 
-public class ClientService : IClientService
+public class ClientService(HttpClient httpClient, ILogger<ClientService> logger) : IClientService
 {
-    private readonly HttpClient _http;
-
-    public ClientService(IHttpClientFactory factory)
-    {
-        _http = factory.CreateClient("SmartBookingAPI");
-    }
+    private readonly ILogger<ClientService> _logger = logger;
 
     public async Task<Guid> CreateClientAsync(string name, string email)
     {
         var client = new ClientDto { Name = name, Email = email };
-        var response = await _http.PostAsJsonAsync("clients", client);
+        var response = await httpClient.PostAsJsonAsync("clients", client);
 
         if (response.IsSuccessStatusCode)
         {
@@ -23,6 +18,7 @@ public class ClientService : IClientService
             return created?.Id ?? Guid.Empty;
         }
 
+        _logger.LogError("Failed to create client. Status code: {StatusCode}", response.StatusCode);
         return Guid.Empty;
     }
 }

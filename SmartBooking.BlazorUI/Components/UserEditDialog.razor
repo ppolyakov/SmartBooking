@@ -1,0 +1,91 @@
+﻿@using System.ComponentModel.DataAnnotations
+@using MudBlazor
+@inject IUserService UserService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">@((IsNew ? "Add User" : "Edit User"))</MudText>
+    </TitleContent>
+    <DialogContent>
+        <EditForm Model="userEditRequestModel" OnValidSubmit="Submit">
+            <DataAnnotationsValidator />
+            <MudTextField For="() => userEditRequestModel.Email" @bind-Value="userEditRequestModel.Email" Label="Email" />
+
+            @if (IsNew)
+            {
+                <MudTextField For="() => userEditRequestModel.Password" @bind-Value="userEditRequestModel.Password" Label="Password" InputType="InputType.Password" />
+            }
+            <MudCheckBox T="bool" @bind-Value="userEditRequestModel.IsAdmin" Label="Is Admin" />
+        </EditForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton ButtonType="ButtonType.Submit" Color="Color.Primary" OnClick="Submit">Save</MudButton>
+        <MudButton Color="Color.Secondary" OnClick="Cancel">Cancel</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private UserEditRequest userEditRequestModel = new();
+
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+    [Parameter]
+    public UserDto? EditUser { get; set; }
+    [Parameter]
+    public bool IsNew { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (EditUser is null)
+        {
+            IsNew = true;
+            userEditRequestModel = new UserEditRequest();
+        }
+        else
+        {
+            userEditRequestModel = new UserEditRequest
+            {
+                Email = EditUser.Email,
+                IsAdmin = EditUser.Roles.Contains("Admin")
+            };
+        }
+    }
+
+    private async Task Submit()
+    {
+        bool success;
+        string errorMessage = string.Empty;
+
+        if (IsNew)
+        {
+            (success, errorMessage) = await UserService.CreateAsync(new UserCreateRequest
+            {
+                Email = userEditRequestModel.Email,
+                Password = userEditRequestModel.Password,
+                IsAdmin = userEditRequestModel.IsAdmin
+            });
+        }
+        else
+        {
+            success = await UserService.UpdateAsync(EditUser.Id, new UserEditRequest
+            {
+                Email = userEditRequestModel.Email,
+                IsAdmin = userEditRequestModel.IsAdmin
+            });
+        }
+        
+        if (success)
+        {
+            Snackbar.Add("User saved", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        else
+        {
+            Snackbar.Add("Operation failed" + errorMessage, Severity.Error);
+
+        }
+    }
+
+    void Cancel() => MudDialog.Cancel();
+}

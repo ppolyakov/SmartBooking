@@ -17,19 +17,30 @@ builder.Services.AddScoped<JwtAuthStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp =>
     sp.GetRequiredService<JwtAuthStateProvider>());
 
-builder.Services.AddHttpClient("SmartBookingAPI", client =>
+builder.Services.AddHttpClient<ITimeSlotsService, TimeSlotService>(client =>
+  {
+      client.BaseAddress = new Uri("https://localhost:7125/api/");
+  });
+builder.Services.AddHttpClient<IClientService, ClientService>(client =>
+  {
+      client.BaseAddress = new Uri("https://localhost:7125/api/");
+  });
+builder.Services.AddHttpClient<IServiceService, ServiceService>(client =>
+  {
+      client.BaseAddress = new Uri("https://localhost:7125/api/");
+  });
+builder.Services.AddHttpClient<IBookingService, BookingService>(client =>
+  {
+      client.BaseAddress = new Uri("https://localhost:7125/api/");
+  });
+builder.Services.AddHttpClient<IAuthService, AuthService>(client =>
+  {
+      client.BaseAddress = new Uri("https://localhost:7125/api/");
+  });
+builder.Services.AddHttpClient<IUserService, UserService>(client =>
 {
     client.BaseAddress = new Uri("https://localhost:7125/api/");
 });
-builder.Services.AddScoped(sp =>
-    sp.GetRequiredService<IHttpClientFactory>()
-      .CreateClient("SmartBookingAPI"));
-
-builder.Services.AddScoped<ITimeSlotsService, TimeSlotService>();
-builder.Services.AddScoped<IClientService, ClientService>();
-builder.Services.AddScoped<IServiceService, ServiceService>();
-builder.Services.AddScoped<IBookingService, BookingService>();
-builder.Services.AddScoped<IAuthService, AuthService>();
 
 var app = builder.Build();
 

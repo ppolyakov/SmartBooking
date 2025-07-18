@@ -3,35 +3,28 @@ using SmartBooking.BlazorUI.Services.Interfaces;
 
 namespace SmartBooking.BlazorUI.Services;
 
-public class ServiceService : IServiceService
+public class ServiceService(HttpClient httpClient) : IServiceService
 {
-    private readonly HttpClient _http;
-
-    public ServiceService(IHttpClientFactory factory)
-    {
-        _http = factory.CreateClient("SmartBookingAPI");
-    }
-
     public async Task<List<ServiceDto>> GetAllServicesAsync()
     {
-        return await _http.GetFromJsonAsync<List<ServiceDto>>("services") ?? [];
+        return await httpClient.GetFromJsonAsync<List<ServiceDto>>("services") ?? [];
     }
 
     public async Task<bool> CreateServiceAsync(ServiceDto dto)
     {
-        var response = await _http.PostAsJsonAsync("services", dto);
+        var response = await httpClient.PostAsJsonAsync("services", dto);
         return response.IsSuccessStatusCode;
     }
 
     public async Task<bool> GenerateSlotsAsync(Guid serviceId, DateTime date)
     {
         var url = $"timeslots/generate?serviceId={serviceId}&date={date:yyyy-MM-dd}";
-        var response = await _http.PostAsync(url, null);
+        var response = await httpClient.PostAsync(url, null);
         return response.IsSuccessStatusCode;
     }
 
     public async Task<List<ServiceWithSlotsDto>> GetServicesWithSlotsAsync()
     {
-        return await _http.GetFromJsonAsync<List<ServiceWithSlotsDto>>("services/full") ?? [];
+        return await httpClient.GetFromJsonAsync<List<ServiceWithSlotsDto>>("services/full") ?? [];
     }
 }

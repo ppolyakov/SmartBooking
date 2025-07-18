@@ -6,7 +6,6 @@
 <MudPaper Class="p-4 max-w-sm mx-auto">
     <EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
         <DataAnnotationsValidator />
-        <ValidationSummary />
 
         <MudTextField For="@(() => loginModel.Email)"
                       @bind-Value="loginModel.Email"

@@ -1,0 +1,79 @@
+﻿@page "/admin/users"
+@attribute [Authorize(Roles = "Admin")]
+@inject IUserService UserService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<MudPaper Class="p-4">
+    <MudText Typo="Typo.h5">Users</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ShowAddDialog">
+        Add User
+    </MudButton>
+
+    <MudTable Items="_users" Hover="true" Class="mt-4">
+        <HeaderContent>
+            <MudTh>Email</MudTh>
+            <MudTh>IsAdmin</MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.Email</MudTd>
+            <MudTd>@(context.Roles.Contains("Admin") ? "Yes" : "No")</MudTd>
+            <MudTd>
+                <MudButton Size="Size.Small" OnClick="() => ShowEditDialog(context)">Edit</MudButton>
+                <MudButton Size="Size.Small" Color="Color.Error" OnClick="() => Delete(context.Id)">Delete</MudButton>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudPaper>
+
+@code {
+    private List<UserDto> _users = [];
+
+    protected override async Task OnInitializedAsync()
+        => _users = await UserService.GetAllAsync();
+
+    private UserDto? _editUser;
+
+    private async Task ShowAddDialog()
+    {
+        var parameters = new DialogParameters
+        {
+            ["IsNew"] = true
+        };
+        var dialog = await DialogService.ShowAsync<UserEditDialog>("Add User", parameters);
+        var result = dialog.Result;
+
+        if (!result.IsCompleted)
+            await Reload();
+    }
+
+    private async Task ShowEditDialog(UserDto user)
+    {
+        var parameters = new DialogParameters
+        {
+            ["EditUser"] = user,
+            ["IsNew"] = false
+        };
+        var dialog = await DialogService.ShowAsync<UserEditDialog>("Edit User", parameters);
+        var result = dialog.Result;
+        if (!result.IsCanceled)
+            await Reload();
+    }
+
+    async Task Delete(string id)
+    {
+        if (await UserService.DeleteAsync(id))
+        {
+            Snackbar.Add("Deleted", Severity.Success);
+            await Reload();
+        }
+        else Snackbar.Add("Delete failed", Severity.Error);
+    }
+
+    async Task Reload()
+    {
+        _users = await UserService.GetAllAsync();
+        StateHasChanged();
+    }
+}
