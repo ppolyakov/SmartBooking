@@ -1,4 +1,4 @@
-﻿namespace SmartBooking.BlazorUI.Services;
+﻿namespace SmartBooking.BlazorUI.Services.Interfaces;
 
 public interface IClientService
 {

@@ -1,4 +1,7 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@using SmartBooking.BlazorUI.Services
+@inject AuthenticationStateProvider AuthStateProvider
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">SmartBooking.BlazorUI</a>
         <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
@@ -14,8 +17,19 @@
     <MudNavLink Href="client" Icon="@Icons.Material.Filled.Person">
         I'm a Client
     </MudNavLink>
-    <MudNavLink Href="admin" Icon="@Icons.Material.Filled.AdminPanelSettings">
-        Admin
+    <AuthorizeView Roles="Admin">
+        <MudNavLink Href="admin" Icon="@Icons.Material.Filled.AdminPanelSettings">
+            Admin
+        </MudNavLink>
+    </AuthorizeView>
+    <MudNavLink Href="bookings" Icon="@Icons.Material.Filled.List">
+        Bookings
+    </MudNavLink>
+    <MudNavLink Href="login" Icon="@Icons.Material.Filled.Login">
+        Login (Admin)
+    </MudNavLink>
+    <MudNavLink Href="/register" Icon="@Icons.Material.Filled.PersonAdd">
+        Register
     </MudNavLink>
     @* <nav class="flex-column">
         <div class="nav-item px-3">

@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using SmartBooking.Domain.Entities;
 using SmartBooking.Infrastructure.Persistence;
+using SmartBooking.WebAPI.Models;
 
 namespace SmartBooking.WebAPI.Controllers;
 
@@ -50,5 +51,26 @@ public class BookingsController : ControllerBase
         await _db.SaveChangesAsync();
 
         return Ok(booking);
+    }
+
+    [HttpGet("all")]
+    public async Task<ActionResult<List<BookingDto>>> GetAllBookings()
+    {
+        var bookings = await _db.Bookings
+            .Include(b => b.Client)
+            .Include(b => b.TimeSlot)
+            .ThenInclude(ts => ts.Service)
+            .ToListAsync();
+
+        var result = bookings.Select(b => new BookingDto
+        {
+            Id = b.Id,
+            StartTime = b.TimeSlot.StartTime,
+            ServiceTitle = b.TimeSlot.Service.Title,
+            ClientName = b.Client.Name,
+            ClientEmail = b.Client.Email
+        }).ToList();
+
+        return Ok(result);
     }
 }

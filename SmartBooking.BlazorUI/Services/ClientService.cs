@@ -1,4 +1,5 @@
 ﻿using SmartBooking.BlazorUI.Models;
+using SmartBooking.BlazorUI.Services.Interfaces;
 
 namespace SmartBooking.BlazorUI.Services;
 

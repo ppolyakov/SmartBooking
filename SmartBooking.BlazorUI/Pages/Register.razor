@@ -1,0 +1,76 @@
+﻿@page "/register"
+@inject IAuthService AuthService
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
+
+<MudPaper Class="p-4 max-w-sm mx-auto">
+    <EditForm Model="@registerRequest" OnValidSubmit="HandleRegister">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <MudTextField For="@(() => registerRequest.Email)"
+                      @bind-Value="registerRequest.Email"
+                      Label="Email"
+                      Required="true" />
+        <ValidationMessage For="@(() => registerRequest.Email)" />
+
+        <MudTextField For="@(() => registerRequest.Password)"
+                      @bind-Value="registerRequest.Password"
+                      Label="Password"
+                      InputType="InputType.Password"
+                      Required="true" />
+        <ValidationMessage For="@(() => registerRequest.Password)" />
+
+        <MudTextField For="@(() => registerRequest.ConfirmPassword)"
+                      @bind-Value="registerRequest.ConfirmPassword"
+                      Label="Confirm Password"
+                      InputType="InputType.Password"
+                      Required="true" />
+        <ValidationMessage For="@(() => registerRequest.ConfirmPassword)" />
+
+        <MudButton ButtonType="ButtonType.Submit"
+                   Color="Color.Primary"
+                   Class="mt-4"
+                   FullWidth="true"
+                   Disabled="@_isLoading">
+            @if (_isLoading)
+            {
+                <MudProgressCircular Size="Size.Medium" Class="mr-2" />
+                <MudText>Registering</MudText>
+            }
+            else
+            {
+                <MudText>Register</MudText>
+            }
+        </MudButton>
+    </EditForm>
+</MudPaper>
+
+@code {
+    private RegisterRequest registerRequest = new();
+    private bool _isLoading;
+
+    private async Task HandleRegister()
+    {
+        if (registerRequest.Password != registerRequest.ConfirmPassword)
+        {
+            Snackbar.Add("Passwords do not match", Severity.Warning);
+            return;
+        }
+
+        _isLoading = true;
+
+        var result = await AuthService.RegisterAsync(registerRequest);
+
+        _isLoading = false;
+        if (result)
+        {
+            Snackbar.Add("Registration successful! Please log in.", Severity.Success);
+            Nav.NavigateTo("/login");
+        }
+        else
+        {
+            Snackbar.Add($"Registration failed", Severity.Error);
+        }
+    }
+}

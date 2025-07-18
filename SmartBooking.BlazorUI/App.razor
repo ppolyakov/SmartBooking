@@ -1,12 +1,24 @@
-﻿<Router AppAssembly="@typeof(App).Assembly">
-    <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
-        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
-    </Found>
-    <NotFound>
-        <PageTitle>Not found</PageTitle>
-        <LayoutView Layout="@typeof(MainLayout)">
-            <p role="alert">Sorry, there's nothing at this address.</p>
-        </LayoutView>
-    </NotFound>
-</Router>
+﻿@using Microsoft.AspNetCore.Components.Authorization
+
+<CascadingAuthenticationState>
+    <Router AppAssembly="@typeof(App).Assembly">
+        <Found Context="routeData">
+            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
+                <NotAuthorized>
+                    <MudPaper Class="p-4">
+                        <MudText Color="Color.Error" Typo="Typo.h6">Access denied</MudText>
+                        <MudText>Please log in as admin to access this page.</MudText>
+                        <MudButton Href="/login" Color="Color.Primary">Go to Login</MudButton>
+                    </MudPaper>
+                </NotAuthorized>
+            </AuthorizeRouteView>
+            <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+        </Found>
+        <NotFound>
+            <PageTitle>Not found</PageTitle>
+            <LayoutView Layout="@typeof(MainLayout)">
+                <p role="alert">Sorry, there's nothing at this address.</p>
+            </LayoutView>
+        </NotFound>
+    </Router>
+</CascadingAuthenticationState>

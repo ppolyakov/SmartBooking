@@ -1,4 +1,9 @@
-﻿@inherits LayoutComponentBase
+﻿@using SmartBooking.BlazorUI.Services
+@using SmartBooking.BlazorUI.Services.Provider
+@inherits LayoutComponentBase
+@inject NavigationManager NavigationManager
+@inject JwtAuthStateProvider AuthProvider
+@inject IHttpClientFactory ClientFactory
 
 @* Required *@
 <MudThemeProvider />
@@ -19,6 +24,15 @@
 
     <main>
         <div class="top-row px-4">
+            <AuthorizeView>
+                <Authorized>
+                    <MudText Color="Color.Success">Logged in as: @context.User.Identity?.Name</MudText>
+                    <MudButton ButtonType="ButtonType.Button" Color="Color.Secondary" OnClick="Logout">Logout</MudButton>
+                </Authorized>
+                <NotAuthorized>
+                    <MudText Color="Color.Error">Not logged in</MudText>
+                </NotAuthorized>
+            </AuthorizeView>
             <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
         </div>
 
@@ -27,3 +41,12 @@
         </article>
     </main>
 </div>
+
+@code {
+
+    private async Task Logout()
+    {
+        await AuthProvider.MarkUserAsLoggedOut();
+        NavigationManager.NavigateTo("/", forceLoad: true);
+    }
+}

@@ -67,4 +67,16 @@ public class TimeSlotsController : ControllerBase
 
         return Ok(slots);
     }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        var slot = await _db.TimeSlots.FindAsync(id);
+        if (slot is null) return NotFound();
+
+        _db.TimeSlots.Remove(slot);
+        await _db.SaveChangesAsync();
+
+        return NoContent();
+    }
 }

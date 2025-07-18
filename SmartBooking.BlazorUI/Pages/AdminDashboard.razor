@@ -1,46 +1,81 @@
-﻿@page "/admin"
+﻿@attribute [Authorize(Roles = "Admin")]
+@page "/admin"
 @using SmartBooking.BlazorUI.Models
 @using SmartBooking.BlazorUI.Services
+@using SmartBooking.BlazorUI.Services.Interfaces
 @inject IServiceService ServiceService
+@inject ITimeSlotsService TimeSlotService
 @inject NavigationManager Nav
 @inject ISnackbar Snackbar
 
 <MudPaper Class="p-4">
     <MudText Typo="Typo.h5" Class="mb-4">Admin Dashboard</MudText>
 
-    <MudButton Color="Color.Primary" OnClick="AddNewService">Add New Service</MudButton>
+    <MudButton StartIcon="@Icons.Material.Filled.Add" OnClick="AddNewService" Color="Color.Primary" Class="mb-4">
+        Add New Service
+    </MudButton>
 
-    <MudTable Items="_services" Hover="true" Dense="true" Class="mt-4">
-        <HeaderContent>
-            <MudTh>Title</MudTh>
-            <MudTh>Duration (min)</MudTh>
-            <MudTh>Actions</MudTh>
-        </HeaderContent>
-        <RowTemplate>
-            <MudTd>@context.Title</MudTd>
-            <MudTd>@context.Duration.TotalMinutes</MudTd>
-            <MudTd>
-                @if (_generatingServiceId == context.Id)
-                {
-                    <MudProgressCircular Indeterminate="true" Size="Size.Medium" />
-                }
-                else
-                {
-                    <MudButton Size="Size.Small" Color="Color.Info" OnClick="() => GenerateSlots(context.Id)">
-                        Generate Slots
-                    </MudButton>
-                }
-            </MudTd>
-        </RowTemplate>
-    </MudTable>
+    <MudExpansionPanels>
+        @foreach (var service in _services)
+        {
+            <MudExpansionPanel Text="@(service.Title + (service.Duration.TotalMinutes + "min"))">
+                <MudText Typo="Typo.subtitle2">Time Slots</MudText>
+
+                <MudButton Color="Color.Info" OnClick="() => GenerateSlots(service.Id)" Disabled="@(_generatingServiceId == service.Id)">
+                    @if (_generatingServiceId == service.Id)
+                    {
+                        <MudProgressCircular Indeterminate="true" Size="Size.Medium" Class="mr-2" />
+                        <MudText>Generating...</MudText>
+                    }
+                    else
+                    {
+                        <MudText>Generate Slots (Today)</MudText>
+                    }
+                </MudButton>
+
+                <MudTable Items="service.Slots" Dense="true" Hover="true" Class="mt-3">
+                    <HeaderContent>
+                        <MudTh>Time</MudTh>
+                        <MudTh>Status</MudTh>
+                        <MudTh>Client</MudTh>
+                        <MudTh></MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@context.StartTime.ToString("g")</MudTd>
+                        <MudTd>
+                            @if (context.IsBooked)
+                            {
+                                <MudChip T="string" Color="Color.Error">Booked</MudChip>
+                            }
+                            else
+                            {
+                                <MudChip T="string" Color="Color.Success">Free</MudChip>
+                            }
+                        </MudTd>
+                        <MudTd>
+                            @if (context.IsBooked)
+                            {
+                                @context.ClientEmail
+                            }
+                        </MudTd>
+                        <MudTd>
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                           OnClick="@(() => DeleteSlot(context.Id, service.Id))" />
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudExpansionPanel>
+        }
+    </MudExpansionPanels>
 </MudPaper>
 
 @code {
-    private List<ServiceDto> _services = [];
+    private List<ServiceWithSlotsDto> _services = [];
+    private Guid? _generatingServiceId;
 
     protected override async Task OnInitializedAsync()
     {
-        _services = await ServiceService.GetAllServicesAsync();
+        _services = await ServiceService.GetServicesWithSlotsAsync();
     }
 
     private void AddNewService()
@@ -48,23 +83,36 @@
         Nav.NavigateTo("/admin/new-service");
     }
 
-    private Guid? _generatingServiceId;
-
     private async Task GenerateSlots(Guid serviceId)
     {
         _generatingServiceId = serviceId;
 
         var success = await ServiceService.GenerateSlotsAsync(serviceId, DateTime.Today);
-
         _generatingServiceId = null;
 
         if (success)
         {
-            Snackbar.Add("Time slots generated successfully!", Severity.Success);
+            Snackbar.Add("Slots generated", Severity.Success);
+            _services = await ServiceService.GetServicesWithSlotsAsync();
         }
         else
         {
-            Snackbar.Add("Failed to generate time slots.", Severity.Error);
+            Snackbar.Add("Failed to generate", Severity.Error);
+        }
+    }
+
+    private async Task DeleteSlot(Guid slotId, Guid serviceId)
+    {
+        var success = await TimeSlotService.DeleteSlotAsync(slotId);
+
+        if (success)
+        {
+            Snackbar.Add("Slot deleted", Severity.Success);
+            _services = await ServiceService.GetServicesWithSlotsAsync();
+        }
+        else
+        {
+            Snackbar.Add("Failed to delete slot", Severity.Error);
         }
     }
 }

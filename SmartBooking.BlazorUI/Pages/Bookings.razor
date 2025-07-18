@@ -1,0 +1,33 @@
+﻿@page "/bookings"
+@using SmartBooking.BlazorUI.Models
+@using SmartBooking.BlazorUI.Services
+@using SmartBooking.BlazorUI.Services.Interfaces
+@inject IBookingService BookingService
+
+<MudPaper Class="p-4">
+    <MudText Typo="Typo.h5" Class="mb-4">All Bookings</MudText>
+
+    <MudTable Items="_bookings" Hover="true" Dense="true">
+        <HeaderContent>
+            <MudTh>Date & Time</MudTh>
+            <MudTh>Service</MudTh>
+            <MudTh>Client</MudTh>
+            <MudTh>Email</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd>@context.StartTime.ToString("g")</MudTd>
+            <MudTd>@context.ServiceTitle</MudTd>
+            <MudTd>@context.ClientName</MudTd>
+            <MudTd>@context.ClientEmail</MudTd>
+        </RowTemplate>
+    </MudTable>
+</MudPaper>
+
+@code {
+    private List<BookingDto> _bookings = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _bookings = await BookingService.GetAllAsync();
+    }
+}

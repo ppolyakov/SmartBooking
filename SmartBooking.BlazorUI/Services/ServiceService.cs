@@ -1,4 +1,5 @@
 ﻿using SmartBooking.BlazorUI.Models;
+using SmartBooking.BlazorUI.Services.Interfaces;
 
 namespace SmartBooking.BlazorUI.Services;
 
@@ -27,5 +28,10 @@ public class ServiceService : IServiceService
         var url = $"timeslots/generate?serviceId={serviceId}&date={date:yyyy-MM-dd}";
         var response = await _http.PostAsync(url, null);
         return response.IsSuccessStatusCode;
+    }
+
+    public async Task<List<ServiceWithSlotsDto>> GetServicesWithSlotsAsync()
+    {
+        return await _http.GetFromJsonAsync<List<ServiceWithSlotsDto>>("services/full") ?? [];
     }
 }
