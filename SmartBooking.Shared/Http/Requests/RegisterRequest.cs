@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace SmartBooking.BlazorUI.Models;
+namespace SmartBooking.Shared.Http.Requests;
 
 public class RegisterRequest
 {

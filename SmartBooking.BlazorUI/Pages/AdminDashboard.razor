@@ -72,7 +72,15 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _services = await ServiceService.GetServicesWithSlotsAsync();
+        var result = await ServiceService.GetServicesWithSlotsAsync();
+        if (result.IsSuccess)
+        {
+            _services = result.Value;
+        }
+        else
+        {
+            Snackbar.Add($"Failed to load services: {result.ErrorMessage}", Severity.Error);
+        }
     }
 
     private void AddNewService()
@@ -84,32 +92,48 @@
     {
         _generatingServiceId = serviceId;
 
-        var success = await ServiceService.GenerateSlotsAsync(serviceId, DateTime.Today);
+        var result = await ServiceService.GenerateSlotsAsync(serviceId, DateTime.Today);
         _generatingServiceId = null;
 
-        if (success)
+        if (result.IsSuccess)
         {
             Snackbar.Add("Slots generated", Severity.Success);
-            _services = await ServiceService.GetServicesWithSlotsAsync();
+            var resultServices = await ServiceService.GetServicesWithSlotsAsync();
+            if (resultServices.IsSuccess)
+            {
+                _services = resultServices.Value;
+            }
+            else
+            {
+                Snackbar.Add($"Failed to refresh services: {resultServices.ErrorMessage}", Severity.Error);
+            }
         }
         else
         {
-            Snackbar.Add("Failed to generate", Severity.Error);
+            Snackbar.Add($"Failed to generate: {result.ErrorMessage}", Severity.Error);
         }
     }
 
     private async Task DeleteSlot(Guid slotId, Guid serviceId)
     {
-        var success = await TimeSlotService.DeleteSlotAsync(slotId);
+        var result = await TimeSlotService.DeleteSlotAsync(slotId);
 
-        if (success)
+        if (result.IsSuccess)
         {
             Snackbar.Add("Slot deleted", Severity.Success);
-            _services = await ServiceService.GetServicesWithSlotsAsync();
+            var resultServices = await ServiceService.GetServicesWithSlotsAsync();
+            if (resultServices.IsSuccess)
+            {
+                _services = resultServices.Value;
+            }
+            else
+            {
+                Snackbar.Add($"Failed to refresh services: {resultServices.ErrorMessage}", Severity.Error);
+            }
         }
         else
         {
-            Snackbar.Add("Failed to delete slot", Severity.Error);
+            Snackbar.Add($"Failed to delete slot: {result.ErrorMessage}", Severity.Error);
         }
     }
 }

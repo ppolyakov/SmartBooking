@@ -54,38 +54,49 @@
 
     private async Task Submit()
     {
-        bool success;
         string errorMessage = string.Empty;
 
         if (IsNew)
         {
-            (success, errorMessage) = await UserService.CreateAsync(new UserCreateRequest
+            var requestEdit = new UserCreateRequest
             {
                 Email = userEditRequestModel.Email,
                 Password = userEditRequestModel.Password,
                 IsAdmin = userEditRequestModel.IsAdmin
-            });
+            };
+            var resultCreate = await UserService.CreateAsync(requestEdit);
+            if (!resultCreate.IsSuccess)
+            {
+                errorMessage = resultCreate.ErrorMessage ?? "Unknown error occurred";
+                Snackbar.Add("Failed to create user: " + errorMessage, Severity.Error);
+            }
+            else
+            {
+                Snackbar.Add("User created", Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
         }
         else
         {
-            success = await UserService.UpdateAsync(EditUser.Id, new UserEditRequest
+            var requestEdit = new UserEditRequest
             {
                 Email = userEditRequestModel.Email,
                 IsAdmin = userEditRequestModel.IsAdmin
-            });
-        }
-        
-        if (success)
-        {
-            Snackbar.Add("User saved", Severity.Success);
-            MudDialog.Close(DialogResult.Ok(true));
-        }
-        else
-        {
-            Snackbar.Add("Operation failed" + errorMessage, Severity.Error);
+            };
 
+            var resultEdit = await UserService.UpdateAsync(EditUser.Id, requestEdit);
+            if (!resultEdit.IsSuccess)
+            {
+                errorMessage = resultEdit.ErrorMessage ?? "Unknown error occurred";
+                Snackbar.Add("Failed to update user: " + errorMessage, Severity.Error);
+            }
+            else
+            {
+                Snackbar.Add("User updated", Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
         }
     }
 
-    void Cancel() => MudDialog.Cancel();
+    private void Cancel() => MudDialog.Cancel();
 }

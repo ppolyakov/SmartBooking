@@ -1,88 +1,148 @@
 ﻿@page "/timeslots"
+@using SmartBooking.Shared.Http.Requests
+@attribute [Authorize]
+@inject NavigationManager NavigationManager
 @inject ITimeSlotsService TimeSlotService
 @inject ISnackbar Snackbar
-@inject NavigationManager Nav
 
-<MudPaper Class="p-4">
-    <MudText Typo="Typo.h5" Class="mb-4">Available Time Slots</MudText>
-
-    @if (_slots is null)
+<CascadingAuthenticationState>
+    @if (!_isInitialized)
     {
         <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
     }
-    else if (_slots.Count == 0)
+    else if (!_isAuthenticated)
     {
-        <MudText>No time slots available.</MudText>
+        <MudPaper Class="p-4">
+            <MudText Typo="Typo.h5" Class="mb-4">Authentication Required</MudText>
+            <MudText>Please log in to view available time slots.</MudText>
+            <MudButton Color="Color.Primary" OnClick="NavigateToLogin">
+                Go to Login
+            </MudButton>
+        </MudPaper>
     }
     else
     {
-        <MudTable Items="_slots" Dense="true" Hover="true">
-            <HeaderContent>
-                <MudTh>Start Time</MudTh>
-                <MudTh>Service</MudTh>
-                <MudTh>Status</MudTh>
-                <MudTh>Action</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd>@context.StartTime.ToString("g")</MudTd>
-                <MudTd>@context.ServiceTitle</MudTd>
-                <MudTd>
-                    @if (context.IsBooked)
-                    {
-                        <MudChip T="string" Color="Color.Error">Booked</MudChip>
-                    }
-                    else
-                    {
-                        <MudChip T="string" Color="Color.Success">Available</MudChip>
-                    }
-                </MudTd>
-                <MudTd>
-                    @if (!context.IsBooked)
-                    {
-                        <MudButton Size="Size.Small" Color="Color.Primary" OnClick="@(() => BookSlot(context.Id))">
-                            Book
-                        </MudButton>
-                    }
-                </MudTd>
-            </RowTemplate>
-        </MudTable>
+        <MudPaper Class="p-4">
+            <MudText Typo="Typo.h5" Class="mb-4">Available Time Slots</MudText>
+
+            @if (_slots is null)
+            {
+                <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+            }
+            else if (_slots.Count == 0)
+            {
+                <MudText>No time slots available.</MudText>
+            }
+            else
+            {
+                <MudTable Items="_slots" Dense="true" Hover="true">
+                    <HeaderContent>
+                        <MudTh>Start Time</MudTh>
+                        <MudTh>Service</MudTh>
+                        <MudTh>Status</MudTh>
+                        <MudTh>Action</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>@context.StartTime.ToString("g")</MudTd>
+                        <MudTd>@context.ServiceTitle</MudTd>
+                        <MudTd>
+                            @if (context.IsBooked)
+                            {
+                                <MudChip T="string" Color="Color.Error">Booked</MudChip>
+                            }
+                            else
+                            {
+                                <MudChip T="string" Color="Color.Success">Available</MudChip>
+                            }
+                        </MudTd>
+                        <MudTd>
+                            @if (!context.IsBooked)
+                            {
+                                <MudButton Size="Size.Small"
+                                           Color="Color.Primary"
+                                           OnClick="() => BookSlot(context.Id)">
+                                    Book
+                                </MudButton>
+                            }
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+        </MudPaper>
     }
-</MudPaper>
+</CascadingAuthenticationState>
 
 @code {
-    private List<TimeSlotDto>? _slots;
+    [CascadingParameter] 
+    private Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
 
-    private Guid? _clientId;
+    private bool _isInitialized;
+    private bool _isAuthenticated;
+    private Guid _userId;
+    private List<TimeSlotDto>? _slots;
 
     protected override async Task OnInitializedAsync()
     {
-        var uri = Nav.ToAbsoluteUri(Nav.Uri);
-        if (Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(uri.Query).TryGetValue("clientId", out var clientIdStr) &&
-            Guid.TryParse(clientIdStr, out var parsedId))
+        var auth = await AuthenticationStateTask;
+        var user = auth.User;
+
+        _isAuthenticated = user.Identity?.IsAuthenticated ?? false;
+        if (!_isAuthenticated)
         {
-            _clientId = parsedId;
+            NavigationManager.NavigateTo("/login");
+            return;
         }
 
-        _slots = await TimeSlotService.GetTimeSlotsAsync();
+        var idClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!Guid.TryParse(idClaim, out _userId))
+        {
+            Snackbar.Add("Cannot determine user ID", Severity.Error);
+            return;
+        }
+
+        var result = await TimeSlotService.GetTimeSlotsAsync();
+        if (result.IsSuccess)
+        {
+            _slots = result.Value;
+        }
+        else
+        {
+            Snackbar.Add($"Failed to load time slots: {result.ErrorMessage}", Severity.Error);
+        }
+        _isInitialized = true;
     }
 
     private async Task BookSlot(Guid slotId)
     {
-        if (_clientId == null)
+        var bookSlotRequest = new BookSlotRequest
         {
-            Snackbar.Add("Please enter your details first.", Severity.Warning);
-            return;
-        }
+            SlotId = slotId,
+            UserId = _userId
+        };
 
-        var success = await TimeSlotService.BookSlotAsync(slotId, _clientId.Value);
-        if (success)
+        var result = await TimeSlotService.BookSlotAsync(bookSlotRequest);
+        if (result.IsSuccess)
         {
             Snackbar.Add("Booking successful!", Severity.Success);
-            _slots = await TimeSlotService.GetTimeSlotsAsync();
+            var slotsResult = await TimeSlotService.GetTimeSlotsAsync();
+
+            if (slotsResult.IsSuccess)
+            {
+                _slots = slotsResult.Value;
+            }
+            else
+            {
+                Snackbar.Add($"Failed to refresh time slots: {slotsResult.ErrorMessage}", Severity.Error);
+            }
         }
         else
         {
-            Snackbar.Add("Booking failed.", Severity.Error);
+            Snackbar.Add($"Booking failed: {result.ErrorMessage}", Severity.Error);
         }
+    }
+
+    private void NavigateToLogin()
+    {
+        NavigationManager.NavigateTo("/login");
     }
 }

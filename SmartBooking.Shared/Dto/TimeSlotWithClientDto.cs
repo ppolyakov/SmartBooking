@@ -1,4 +1,4 @@
-﻿namespace SmartBooking.BlazorUI.Models;
+﻿namespace SmartBooking.Shared.Dto;
 
 public class TimeSlotWithClientDto
 {

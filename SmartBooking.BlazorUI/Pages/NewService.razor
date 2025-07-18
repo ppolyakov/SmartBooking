@@ -25,15 +25,15 @@
             Duration = TimeSpan.FromMinutes(_duration)
         };
 
-        var success = await ServiceService.CreateServiceAsync(dto);
-        if (success)
+        var result = await ServiceService.CreateServiceAsync(dto);
+        if (result.IsSuccess)
         {
             Snackbar.Add("Service created!", Severity.Success);
             Nav.NavigateTo("/admin");
         }
         else
         {
-            Snackbar.Add("Failed to create service.", Severity.Error);
+            Snackbar.Add($"Failed to create service. {result.ErrorMessage}", Severity.Error);
         }
     }
 }

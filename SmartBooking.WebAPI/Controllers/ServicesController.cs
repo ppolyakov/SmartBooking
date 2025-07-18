@@ -1,6 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SmartBooking.Domain.Entities;
+using SmartBooking.Infrastructure.Identity;
 using SmartBooking.Infrastructure.Persistence;
 using SmartBooking.WebAPI.Models;
 
@@ -11,16 +14,22 @@ namespace SmartBooking.WebAPI.Controllers;
 public class ServicesController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public ServicesController(AppDbContext db)
+    public ServicesController(AppDbContext db, UserManager<ApplicationUser> userManager)
     {
         _db = db;
+        _userManager = userManager;
     }
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Service>>> GetAll()
     {
-        return await _db.Services.Include(s => s.TimeSlots).ToListAsync();
+        var services = await _db.Services
+                .Include(s => s.TimeSlots)
+                .ToListAsync();
+
+        return Ok(services);
     }
 
     [HttpPost]
@@ -35,26 +44,42 @@ public class ServicesController : ControllerBase
     public async Task<ActionResult<List<ServiceWithSlotsDto>>> GetAllWithSlots()
     {
         var services = await _db.Services
-            .Include(s => s.TimeSlots)
-            .ThenInclude(ts => ts.Booking)
-            .ThenInclude(b => b.Client)
-            .ToListAsync();
+                .Include(s => s.TimeSlots)
+                    .ThenInclude(ts => ts.Booking)
+                .ToListAsync();
 
-        var result = services.Select(service => new ServiceWithSlotsDto
+        var result = new List<ServiceWithSlotsDto>(services.Count);
+
+        foreach (var service in services)
         {
-            Id = service.Id,
-            Title = service.Title,
-            Duration = service.Duration,
-            Slots = service.TimeSlots
-                .OrderBy(ts => ts.StartTime)
-                .Select(ts => new TimeSlotWithClientDto
+            var slots = new List<TimeSlotWithClientDto>(service.TimeSlots.Count);
+
+            foreach (var ts in service.TimeSlots.OrderBy(ts => ts.StartTime))
+            {
+                string? email = null;
+                if (ts.Booking != null)
+                {
+                    var user = await _userManager.FindByIdAsync(ts.Booking.UserId.ToString());
+                    email = user?.Email;
+                }
+
+                slots.Add(new TimeSlotWithClientDto
                 {
                     Id = ts.Id,
                     StartTime = ts.StartTime,
                     IsBooked = ts.Booking != null,
-                    ClientEmail = ts.Booking?.Client?.Email
-                }).ToList()
-        }).ToList();
+                    ClientEmail = email
+                });
+            }
+
+            result.Add(new ServiceWithSlotsDto
+            {
+                Id = service.Id,
+                Title = service.Title,
+                Duration = service.Duration,
+                Slots = slots
+            });
+        }
 
         return Ok(result);
     }

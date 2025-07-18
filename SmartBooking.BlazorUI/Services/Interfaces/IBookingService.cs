@@ -1,8 +1,9 @@
-﻿using SmartBooking.BlazorUI.Models;
+﻿using SmartBooking.BlazorUI.Helpers;
+using SmartBooking.Shared.Dto;
 
 namespace SmartBooking.BlazorUI.Services.Interfaces;
 
 public interface IBookingService
 {
-    Task<List<BookingDto>> GetAllAsync();
+    Task<Result<List<BookingDto>>> GetAllAsync();
 }

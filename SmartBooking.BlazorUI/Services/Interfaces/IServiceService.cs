@@ -1,11 +1,12 @@
-﻿using SmartBooking.BlazorUI.Models;
+﻿using SmartBooking.BlazorUI.Helpers;
+using SmartBooking.Shared.Dto;
 
 namespace SmartBooking.BlazorUI.Services.Interfaces;
 
 public interface IServiceService
 {
-    Task<List<ServiceDto>> GetAllServicesAsync();
-    Task<bool> CreateServiceAsync(ServiceDto dto);
-    Task<bool> GenerateSlotsAsync(Guid serviceId, DateTime date);
-    Task<List<ServiceWithSlotsDto>> GetServicesWithSlotsAsync();
+    Task<Result<List<ServiceDto>>> GetAllServicesAsync();
+    Task<Result<bool>> CreateServiceAsync(ServiceDto dto);
+    Task<Result<bool>> GenerateSlotsAsync(Guid serviceId, DateTime date);
+    Task<Result<List<ServiceWithSlotsDto>>> GetServicesWithSlotsAsync();
 }

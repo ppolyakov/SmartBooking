@@ -1,30 +1,100 @@
-﻿using SmartBooking.BlazorUI.Models;
+﻿using SmartBooking.BlazorUI.Helpers;
 using SmartBooking.BlazorUI.Services.Interfaces;
+using SmartBooking.Shared.Dto;
+using System.Text.Json;
 
 namespace SmartBooking.BlazorUI.Services;
 
-public class ServiceService(HttpClient httpClient) : IServiceService
+public class ServiceService(HttpClient httpClient, ILogger<ServiceService> logger) : IServiceService
 {
-    public async Task<List<ServiceDto>> GetAllServicesAsync()
+    public async Task<Result<List<ServiceDto>>> GetAllServicesAsync()
     {
-        return await httpClient.GetFromJsonAsync<List<ServiceDto>>("services") ?? [];
+        try
+        {
+            var services = await httpClient.GetFromJsonAsync<List<ServiceDto>>("services");
+            if (services == null)
+            {
+                logger.LogWarning("No services found.");
+                return Result<List<ServiceDto>>.Failure("No services found");
+            }
+
+            return Result<List<ServiceDto>>.Success(services ?? new List<ServiceDto>());
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Error retrieving services.");
+            return Result<List<ServiceDto>>.Failure("Error retrieving services");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Unexpected error retrieving services.");
+            return Result<List<ServiceDto>>.Failure("Unexpected error retrieving services");
+        }
     }
 
-    public async Task<bool> CreateServiceAsync(ServiceDto dto)
+    public async Task<Result<bool>> CreateServiceAsync(ServiceDto dto)
     {
-        var response = await httpClient.PostAsJsonAsync("services", dto);
-        return response.IsSuccessStatusCode;
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync("services", dto);
+            response.EnsureSuccessStatusCode();
+            return Result<bool>.Success(true);
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Error creating service.");
+            return Result<bool>.Failure("Error creating service");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Unexpected error creating service.");
+            return Result<bool>.Failure("Unexpected error creating service");
+        }
     }
 
-    public async Task<bool> GenerateSlotsAsync(Guid serviceId, DateTime date)
+    public async Task<Result<bool>> GenerateSlotsAsync(Guid serviceId, DateTime date)
     {
-        var url = $"timeslots/generate?serviceId={serviceId}&date={date:yyyy-MM-dd}";
-        var response = await httpClient.PostAsync(url, null);
-        return response.IsSuccessStatusCode;
+        try
+        {
+            var url = $"timeslots/generate?serviceId={serviceId}&date={date:yyyy-MM-dd}";
+            var response = await httpClient.PostAsync(url, null);
+            response.EnsureSuccessStatusCode();
+            return Result<bool>.Success(true);
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Error generating slots for service.");
+            return Result<bool>.Failure("Error generating slots");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Unexpected error generating slots for service.");
+            return Result<bool>.Failure("Unexpected error generating slots");
+        }
     }
 
-    public async Task<List<ServiceWithSlotsDto>> GetServicesWithSlotsAsync()
+    public async Task<Result<List<ServiceWithSlotsDto>>> GetServicesWithSlotsAsync()
     {
-        return await httpClient.GetFromJsonAsync<List<ServiceWithSlotsDto>>("services/full") ?? [];
+        try
+        {
+            var servicesWithSlots = await httpClient.GetFromJsonAsync<List<ServiceWithSlotsDto>>("services/full");
+            if (servicesWithSlots == null)
+            {
+                logger.LogWarning("No services with slots found.");
+                return Result<List<ServiceWithSlotsDto>>.Failure("No services with slots found");
+            }
+
+            return Result<List<ServiceWithSlotsDto>>.Success(servicesWithSlots ?? new List<ServiceWithSlotsDto>());
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Error retrieving services with slots.");
+            return Result<List<ServiceWithSlotsDto>>.Failure("Error retrieving services with slots");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Unexpected error retrieving services with slots.");
+            return Result<List<ServiceWithSlotsDto>>.Failure("Unexpected error retrieving services with slots");
+        }
     }
 }

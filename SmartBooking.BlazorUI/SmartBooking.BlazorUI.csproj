@@ -14,4 +14,8 @@
     <ProjectReference Include="..\SmartBooking.Shared\SmartBooking.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Models\" />
+  </ItemGroup>
+
 </Project>

@@ -1,7 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SmartBooking.Domain.Entities;
+using SmartBooking.Infrastructure.Identity;
 using SmartBooking.Infrastructure.Persistence;
+using SmartBooking.Shared.Http.Requests;
 using SmartBooking.WebAPI.Models;
 
 namespace SmartBooking.WebAPI.Controllers;
@@ -11,42 +15,60 @@ namespace SmartBooking.WebAPI.Controllers;
 public class BookingsController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public BookingsController(AppDbContext db)
+    public BookingsController(AppDbContext db, UserManager<ApplicationUser> userManager)
     {
         _db = db;
+        _userManager = userManager;
     }
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Booking>>> GetAll()
     {
-        return await _db.Bookings
-            .Include(b => b.Client)
-            .Include(b => b.TimeSlot)
-            .ThenInclude(t => t.Service)
-            .ToListAsync();
+        var bookings = await _db.Bookings
+                .Include(b => b.TimeSlot)
+                .ThenInclude(ts => ts.Service)
+                .ToListAsync();
+
+        var result = new List<BookingDto>();
+        foreach (var b in bookings)
+        {
+            var user = await _userManager.FindByIdAsync(b.UserId.ToString());
+            result.Add(new BookingDto
+            {
+                Id = b.Id,
+                StartTime = b.TimeSlot.StartTime,
+                ServiceTitle = b.TimeSlot.Service.Title,
+                ClientName = user?.UserName ?? "(unknown)",
+                ClientEmail = user?.Email ?? "(unknown)"
+            });
+        }
+        return Ok(result);
     }
 
     [HttpPost]
-    public async Task<ActionResult> Create(Guid clientId, Guid timeSlotId)
+    public async Task<ActionResult> Create([FromBody] BookSlotRequest request)
     {
-        var client = await _db.Clients.FindAsync(clientId);
+        var user = await _userManager.FindByIdAsync(request.UserId.ToString());
+        if (user == null)
+            return NotFound("User not found.");
+
         var slot = await _db.TimeSlots
             .Include(s => s.Booking)
-            .FirstOrDefaultAsync(s => s.Id == timeSlotId);
+            .FirstOrDefaultAsync(s => s.Id == request.SlotId);
 
-        if (client == null || slot == null)
-            return NotFound("Client or TimeSlot not found.");
+        if (slot == null)
+            return NotFound("TimeSlot not found.");
 
         if (slot.Booking != null)
             return BadRequest("TimeSlot already booked.");
 
         var booking = new Booking
         {
-            ClientId = clientId,
-            TimeSlotId = timeSlotId
+            UserId = request.UserId,
+            TimeSlotId = request.SlotId
         };
-
         _db.Bookings.Add(booking);
         await _db.SaveChangesAsync();
 
@@ -57,19 +79,24 @@ public class BookingsController : ControllerBase
     public async Task<ActionResult<List<BookingDto>>> GetAllBookings()
     {
         var bookings = await _db.Bookings
-            .Include(b => b.Client)
-            .Include(b => b.TimeSlot)
+        .Include(b => b.TimeSlot)
             .ThenInclude(ts => ts.Service)
-            .ToListAsync();
+        .ToListAsync();
 
-        var result = bookings.Select(b => new BookingDto
+        var result = new List<BookingDto>(bookings.Count);
+        foreach (var b in bookings)
         {
-            Id = b.Id,
-            StartTime = b.TimeSlot.StartTime,
-            ServiceTitle = b.TimeSlot.Service.Title,
-            ClientName = b.Client.Name,
-            ClientEmail = b.Client.Email
-        }).ToList();
+            var user = await _userManager.FindByIdAsync(b.UserId.ToString());
+
+            result.Add(new BookingDto
+            {
+                Id = b.Id,
+                StartTime = b.TimeSlot.StartTime,
+                ServiceTitle = b.TimeSlot.Service.Title,
+                ClientName = user?.UserName ?? "(unknown)",
+                ClientEmail = user?.Email ?? "(unknown)"
+            });
+        }
 
         return Ok(result);
     }

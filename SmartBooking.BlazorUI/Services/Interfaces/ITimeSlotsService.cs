@@ -1,10 +1,12 @@
-﻿using SmartBooking.BlazorUI.Models;
+﻿using SmartBooking.BlazorUI.Helpers;
+using SmartBooking.Shared.Dto;
+using SmartBooking.Shared.Http.Requests;
 
 namespace SmartBooking.BlazorUI.Services.Interfaces;
 
 public interface ITimeSlotsService
 {
-    Task<List<TimeSlotDto>> GetTimeSlotsAsync();
-    Task<bool> BookSlotAsync(Guid slotId, Guid clientId);
-    Task<bool> DeleteSlotAsync(Guid slotId);
+    Task<Result<List<TimeSlotDto>>> GetTimeSlotsAsync();
+    Task<Result<bool>> BookSlotAsync(BookSlotRequest request);
+    Task<Result<bool>> DeleteSlotAsync(Guid slotId);
 }

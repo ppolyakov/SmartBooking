@@ -1,9 +1,10 @@
-﻿using SmartBooking.BlazorUI.Models;
+﻿using SmartBooking.BlazorUI.Helpers;
+using SmartBooking.Shared.Http.Requests;
 
 namespace SmartBooking.BlazorUI.Services.Interfaces;
 
 public interface IAuthService
 {
-    Task<bool> RegisterAsync(RegisterRequest request);
-    Task<bool> LoginAsync(LoginRequest request);
+    Task<Result<bool>> RegisterAsync(RegisterRequest request);
+    Task<Result<bool>> LoginAsync(LoginRequest request);
 }

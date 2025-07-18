@@ -21,10 +21,6 @@ builder.Services.AddHttpClient<ITimeSlotsService, TimeSlotService>(client =>
   {
       client.BaseAddress = new Uri("https://localhost:7125/api/");
   });
-builder.Services.AddHttpClient<IClientService, ClientService>(client =>
-  {
-      client.BaseAddress = new Uri("https://localhost:7125/api/");
-  });
 builder.Services.AddHttpClient<IServiceService, ServiceService>(client =>
   {
       client.BaseAddress = new Uri("https://localhost:7125/api/");

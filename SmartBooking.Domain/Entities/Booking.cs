@@ -4,8 +4,7 @@ namespace SmartBooking.Domain.Entities;
 
 public class Booking : BaseEntity
 {
-    public Guid ClientId { get; set; }
-    public Client Client { get; set; } = default!;
+    public Guid UserId { get; set; }
 
     public Guid TimeSlotId { get; set; }
     public TimeSlot TimeSlot { get; set; } = default!;

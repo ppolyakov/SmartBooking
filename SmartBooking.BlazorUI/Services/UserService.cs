@@ -1,7 +1,8 @@
 ﻿using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
-using SmartBooking.BlazorUI.Models;
+using SmartBooking.BlazorUI.Helpers;
 using SmartBooking.BlazorUI.Services.Interfaces;
 using SmartBooking.Shared.Dto;
+using SmartBooking.Shared.Http.Requests;
 using System.Net.Http.Headers;
 
 public class UserService(HttpClient http, ProtectedLocalStorage storage, ILogger<UserService> logger) : IUserService
@@ -16,41 +17,95 @@ public class UserService(HttpClient http, ProtectedLocalStorage storage, ILogger
         }
     }
 
-    public async Task<List<UserDto>> GetAllAsync()
+    public async Task<Result<List<UserDto>>> GetAllAsync()
     {
-        await AddAuthHeaderAsync();
-        return await http.GetFromJsonAsync<List<UserDto>>("users")
-               ?? new List<UserDto>();
-    }
-
-    public async Task<(bool, string)> CreateAsync(UserCreateRequest dto)
-    {
-        await AddAuthHeaderAsync();
-        var resp = await http.PostAsJsonAsync("users", dto);
-
-        if (!resp.IsSuccessStatusCode)
+        try 
         {
-            var errorContent = await resp.Content.ReadAsStringAsync();
+            await AddAuthHeaderAsync();
+            var users = await http.GetFromJsonAsync<List<UserDto>>("users");
+            if (users == null)
+            {
+                logger.LogWarning("No users found.");
+                return Result<List<UserDto>>.Failure("No users found");
+            }
 
-            logger.LogError("Failed to create user. Status code: {StatusCode}, Error: {ErrorContent}", resp.StatusCode, errorContent);
-
-            return (false, errorContent);
+            return Result<List<UserDto>>.Success(users ?? new List<UserDto>());
         }
-
-        return (true, string.Empty);
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Error retrieving users.");
+            return Result<List<UserDto>>.Failure("Error retrieving users");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Unexpected error retrieving users.");
+            return Result<List<UserDto>>.Failure("Unexpected error retrieving users");
+        }
     }
 
-    public async Task<bool> UpdateAsync(string id, UserEditRequest dto)
+    public async Task<Result<bool>> CreateAsync(UserCreateRequest dto)
     {
-        await AddAuthHeaderAsync();
-        var resp = await http.PutAsJsonAsync($"users/{id}", dto);
-        return resp.IsSuccessStatusCode;
+        try 
+        {
+            await AddAuthHeaderAsync();
+            var response = await http.PostAsJsonAsync("users", dto);
+            response.EnsureSuccessStatusCode();
+            logger.LogInformation("User created successfully.");
+            return Result<bool>.Success(true);
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Error creating user.");
+            return Result<bool>.Failure("Error creating user");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Unexpected error creating user.");
+            return Result<bool>.Failure("Unexpected error creating user");
+        }
     }
 
-    public async Task<bool> DeleteAsync(string id)
+    public async Task<Result<bool>> UpdateAsync(string id, UserEditRequest dto)
     {
-        await AddAuthHeaderAsync();
-        var resp = await http.DeleteAsync($"users/{id}");
-        return resp.IsSuccessStatusCode;
+        try 
+        {
+            await AddAuthHeaderAsync();
+            var response = await http.PutAsJsonAsync($"users/{id}", dto);
+            response.EnsureSuccessStatusCode();
+            logger.LogInformation("User {Id} updated successfully.", id);
+            return Result<bool>.Success(true);
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Error updating user {Id}.", id);
+            return Result<bool>.Failure("Error updating user");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Unexpected error updating user {Id}.", id);
+            return Result<bool>.Failure("Unexpected error updating user");
+        }
+    }
+
+    public async Task<Result<bool>> DeleteAsync(string id)
+    {
+        try 
+        {
+            await AddAuthHeaderAsync();
+            var response = await http.DeleteAsync($"users/{id}");
+            response.EnsureSuccessStatusCode();
+            logger.LogInformation("User {Id} deleted successfully.", id);
+            return Result<bool>.Success(true);
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Error deleting user {Id}.", id);
+            return Result<bool>.Failure("Error deleting user");
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Unexpected error deleting user {Id}.", id);
+            return Result<bool>.Failure("Unexpected error deleting user");
+        }
     }
 }

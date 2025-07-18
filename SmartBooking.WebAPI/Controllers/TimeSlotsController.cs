@@ -18,7 +18,6 @@ public class TimeSlotsController : ControllerBase
     }
 
     [HttpGet]
-    [HttpGet]
     public async Task<ActionResult<IEnumerable<TimeSlotDto>>> GetAll()
     {
         var slots = await _db.TimeSlots

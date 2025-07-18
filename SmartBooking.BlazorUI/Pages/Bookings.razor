@@ -1,5 +1,6 @@
 ﻿@page "/bookings"
 @inject IBookingService BookingService
+@inject ISnackbar Snackbar
 
 <MudPaper Class="p-4">
     <MudText Typo="Typo.h5" Class="mb-4">All Bookings</MudText>
@@ -25,6 +26,14 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _bookings = await BookingService.GetAllAsync();
+        var result = await BookingService.GetAllAsync();
+        if (result.IsSuccess)
+        {
+            _bookings = result.Value;
+        }
+        else
+        {
+            Snackbar.Add($"Failed to load bookings: {result.ErrorMessage}", Severity.Error);
+        }
     }
 }

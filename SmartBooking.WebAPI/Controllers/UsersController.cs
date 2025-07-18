@@ -6,7 +6,6 @@ using SmartBooking.Shared.Dto;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "Admin")]
 public class UsersController : ControllerBase
 {
     private readonly UserManager<ApplicationUser> _um;

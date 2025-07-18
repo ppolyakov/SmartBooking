@@ -1,12 +1,13 @@
-﻿using SmartBooking.BlazorUI.Models;
+﻿using SmartBooking.BlazorUI.Helpers;
 using SmartBooking.Shared.Dto;
+using SmartBooking.Shared.Http.Requests;
 
 namespace SmartBooking.BlazorUI.Services.Interfaces;
 
 public interface IUserService
 {
-    Task<List<UserDto>> GetAllAsync();
-    Task<(bool, string)> CreateAsync(UserCreateRequest dto);
-    Task<bool> UpdateAsync(string id, UserEditRequest dto);
-    Task<bool> DeleteAsync(string id);
+    Task<Result<List<UserDto>>> GetAllAsync();
+    Task<Result<bool>> CreateAsync(UserCreateRequest dto);
+    Task<Result<bool>> UpdateAsync(string id, UserEditRequest dto);
+    Task<Result<bool>> DeleteAsync(string id);
 }

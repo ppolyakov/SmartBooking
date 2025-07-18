@@ -91,15 +91,53 @@ using (var scope = app.Services.CreateScope())
 {
     var authDb = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
     authDb.Database.Migrate();
+
     var roleMgr = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    var userMgr = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+    var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+
     foreach (var role in new[] { "Admin", "User" })
+    {
         if (!await roleMgr.RoleExistsAsync(role))
             await roleMgr.CreateAsync(new IdentityRole(role));
+    }
+
+    var adminEmail = config["Admin:Email"] ?? "admin@example.com";
+    var adminPassword = config["Admin:Password"] ?? "Admin123!";
+    var adminUser = await userMgr.FindByEmailAsync(adminEmail);
+    if (adminUser == null)
+    {
+        adminUser = new ApplicationUser { UserName = adminEmail, Email = adminEmail };
+        var createRes = await userMgr.CreateAsync(adminUser, adminPassword);
+        if (createRes.Succeeded)
+        {
+            await userMgr.AddToRoleAsync(adminUser, "Admin");
+        }
+        else
+        {
+
+        }
+    }
 
     var appDb = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     appDb.Database.EnsureCreated();
     DbInitializer.Seed(appDb);
 }
+
+//using (var scope = app.Services.CreateScope())
+//{
+//    var authDb = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
+//    authDb.Database.Migrate();
+//    var roleMgr = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+//    foreach (var role in new[] { "Admin", "User" })
+//        if (!await roleMgr.RoleExistsAsync(role))
+//            await roleMgr.CreateAsync(new IdentityRole(role));
+
+
+//    var appDb = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+//    appDb.Database.EnsureCreated();
+//    DbInitializer.Seed(appDb);
+//}
 
 if (app.Environment.IsDevelopment())
 {

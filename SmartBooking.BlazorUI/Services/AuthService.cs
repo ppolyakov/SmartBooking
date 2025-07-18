@@ -1,44 +1,58 @@
-﻿using SmartBooking.BlazorUI.Models;
+﻿using SmartBooking.BlazorUI.Helpers;
 using SmartBooking.BlazorUI.Services.Interfaces;
 using SmartBooking.BlazorUI.Services.Provider;
+using SmartBooking.Shared.Http.Requests;
+using SmartBooking.Shared.Http.Responses;
 
 namespace SmartBooking.BlazorUI.Services;
 
 public class AuthService(HttpClient httpClient, JwtAuthStateProvider jwtAuthStateProvider, ILogger<AuthService> logger) : IAuthService
 {
-    public async Task<bool> LoginAsync(LoginRequest request)
+    public async Task<Result<bool>> LoginAsync(LoginRequest request)
     {
-        var resp = await httpClient.PostAsJsonAsync("auth/login", request);
-        if (!resp.IsSuccessStatusCode)
+        try 
         {
-            logger.LogError("Login failed with status code: {StatusCode}", resp.StatusCode);
-            return false;
+            var response = await httpClient.PostAsJsonAsync("auth/login", request);
+            response.EnsureSuccessStatusCode();
+            var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
+            if (result?.Token is null)
+            {
+                logger.LogError("Login response did not contain a token.");
+                return Result<bool>.Failure("Login failed: No token received.");
+            }
+            await jwtAuthStateProvider.MarkUserAsAuthenticated(result.Token);
+            return Result<bool>.Success(true);
         }
-
-        var result = await resp.Content.ReadFromJsonAsync<LoginResponse>();
-        if (result?.Token is null)
+        catch (HttpRequestException ex)
         {
-            logger.LogError("Login response did not contain a token.");
-            return false;
+            logger.LogError(ex, "Error during login.");
+            return Result<bool>.Failure("Login failed");
         }
-
-        await jwtAuthStateProvider.MarkUserAsAuthenticated(result.Token);
-
-        return true;
+        catch (Exception e)
+        {
+            logger.LogError(e, "Unexpected error during login.");
+            return Result<bool>.Failure("Unexpected error during login");
+        }
     }
 
-    public async Task<bool> RegisterAsync(RegisterRequest request)
+    public async Task<Result<bool>> RegisterAsync(RegisterRequest request)
     {
-        var resp = await httpClient.PostAsJsonAsync("auth/register", request);
-
-        if (resp.IsSuccessStatusCode)
+        try 
         {
-            return true;
+            var response = await httpClient.PostAsJsonAsync("auth/register", request);
+            response.EnsureSuccessStatusCode();
+            logger.LogInformation("User registered successfully.");
+            return Result<bool>.Success(true);
         }
-        else
+        catch (HttpRequestException ex) 
         {
-            logger.LogError("Registration failed with status code: {StatusCode}", resp.StatusCode);
-            return false;
+            logger.LogError(ex, "Error during registration.");
+            return Result<bool>.Failure("Registration failed");
+        }
+        catch (Exception e) 
+        {
+            logger.LogError(e, "Unexpected error during registration.");
+            return Result<bool>.Failure("Unexpected error during registration");
         }
     }
 }

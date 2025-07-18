@@ -7,23 +7,41 @@ public static class DbInitializer
 {
     public static void Seed(AppDbContext db)
     {
-        if (db.Services.Any()) return;
+        if (db.Services.Any())
+            return;
 
-        var service = new Service
+        var haircut = new Service
         {
             Title = "Haircut",
             Duration = TimeSpan.FromMinutes(30)
         };
-
-        db.Services.Add(service);
-
-        var client = new Client
+        var massage = new Service
         {
-            Name = "Jhonny Depp",
-            Email = "johnydepp@example.com"
+            Title = "Massage",
+            Duration = TimeSpan.FromHours(1)
         };
+        db.Services.AddRange(haircut, massage);
+        db.SaveChanges();
 
-        db.Clients.Add(client);
+        var slots = new List<TimeSlot>();
+        for (int day = 0; day < 3; day++)
+        {
+            var date = DateTime.Today.AddDays(day).AddHours(9);
+            for (int i = 0; i < 8; i++)
+            {
+                slots.Add(new TimeSlot
+                {
+                    ServiceId = haircut.Id,
+                    StartTime = date.AddHours(i)
+                });
+                slots.Add(new TimeSlot
+                {
+                    ServiceId = massage.Id,
+                    StartTime = date.AddHours(i)
+                });
+            }
+        }
+        db.TimeSlots.AddRange(slots);
         db.SaveChanges();
     }
 }

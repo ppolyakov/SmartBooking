@@ -29,11 +29,20 @@
 
 @code {
     private List<UserDto> _users = [];
+    private UserDto? _editUser;
 
     protected override async Task OnInitializedAsync()
-        => _users = await UserService.GetAllAsync();
-
-    private UserDto? _editUser;
+    {
+        var result = await UserService.GetAllAsync();
+        if (result.IsSuccess)
+        {
+            _users = result.Value;
+        }
+        else
+        {
+            Snackbar.Add($"Failed to load users: {result.ErrorMessage}", Severity.Error);
+        }
+    } 
 
     private async Task ShowAddDialog()
     {
@@ -63,17 +72,27 @@
 
     async Task Delete(string id)
     {
-        if (await UserService.DeleteAsync(id))
+        var result = await UserService.DeleteAsync(id);
+        if (result.IsSuccess)
         {
             Snackbar.Add("Deleted", Severity.Success);
             await Reload();
         }
-        else Snackbar.Add("Delete failed", Severity.Error);
+        else 
+            Snackbar.Add($"Delete failed: {result.ErrorMessage}", Severity.Error);
     }
 
     async Task Reload()
     {
-        _users = await UserService.GetAllAsync();
+        var result = await UserService.GetAllAsync();
+        if (result.IsSuccess)
+        {
+            _users = result.Value;
+        }
+        else
+        {
+            Snackbar.Add($"Failed to reload users: {result.ErrorMessage}", Severity.Error);
+        }
         StateHasChanged();
     }
 }

@@ -10,7 +10,6 @@ public class AppDbContext : DbContext
     {
     }
 
-    public DbSet<Client> Clients => Set<Client>();
     public DbSet<Service> Services => Set<Service>();
     public DbSet<TimeSlot> TimeSlots => Set<TimeSlot>();
     public DbSet<Booking> Bookings => Set<Booking>();
