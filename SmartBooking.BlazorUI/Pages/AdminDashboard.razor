@@ -1,8 +1,5 @@
 ﻿@attribute [Authorize(Roles = "Admin")]
 @page "/admin"
-@using SmartBooking.BlazorUI.Models
-@using SmartBooking.BlazorUI.Services
-@using SmartBooking.BlazorUI.Services.Interfaces
 @inject IServiceService ServiceService
 @inject ITimeSlotsService TimeSlotService
 @inject NavigationManager Nav
@@ -18,7 +15,7 @@
     <MudExpansionPanels>
         @foreach (var service in _services)
         {
-            <MudExpansionPanel Text="@(service.Title + (service.Duration.TotalMinutes + "min"))">
+            <MudExpansionPanel Text="@(service.Title + " " + (service.Duration.TotalMinutes + "min"))">
                 <MudText Typo="Typo.subtitle2">Time Slots</MudText>
 
                 <MudButton Color="Color.Info" OnClick="() => GenerateSlots(service.Id)" Disabled="@(_generatingServiceId == service.Id)">

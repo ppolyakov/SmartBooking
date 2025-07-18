@@ -1,52 +1,48 @@
 ﻿@page "/login"
-@using System.Net.Http.Json
-@using SmartBooking.BlazorUI.Services
-@using SmartBooking.BlazorUI.Services.Provider
-@inject IHttpClientFactory ClientFactory
-@inject JwtAuthStateProvider AuthProvider
+@inject IAuthService AuthService
 @inject NavigationManager Nav
 @inject ISnackbar Snackbar
 
-<MudPaper Class="p-4 max-w-sm">
-    <MudText Typo="Typo.h5">Admin Login</MudText>
+<MudPaper Class="p-4 max-w-sm mx-auto">
+    <EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
 
-    <MudTextField @bind-Value="_email" Label="Email" Required="true" />
-    <MudTextField @bind-Value="_password" Label="Password" InputType="InputType.Password" Required="true" />
+        <MudTextField For="@(() => loginModel.Email)"
+                      @bind-Value="loginModel.Email"
+                      Label="Email"
+                      Required="true" />
+        <ValidationMessage For="@(() => loginModel.Email)" />
 
-    <MudButton OnClick="HandleLogin" Color="Color.Primary" Class="mt-4" FullWidth="true">
-        Login
-    </MudButton>
+        <MudTextField For="@(() => loginModel.Password)"
+                      @bind-Value="loginModel.Password"
+                      Label="Password"
+                      InputType="InputType.Password"
+                      Required="true" />
+        <ValidationMessage For="@(() => loginModel.Password)" />
+
+        <MudButton ButtonType="ButtonType.Submit"
+                   Color="Color.Primary"
+                   Class="mt-4"
+                   FullWidth="true">
+            Login
+        </MudButton>
+    </EditForm>
 </MudPaper>
 
 @code {
-    private string _email = "";
-    private string _password = "";
+    private LoginRequest loginModel = new();
 
     private async Task HandleLogin()
     {
-        var client = ClientFactory.CreateClient("SmartBookingAPI");
-        var resp = await client.PostAsJsonAsync("auth/login", new { Email = _email, Password = _password });
-        if (!resp.IsSuccessStatusCode)
+        var success = await AuthService.LoginAsync(loginModel);
+        if (!success)
         {
             Snackbar.Add("Login failed", Severity.Error);
             return;
         }
 
-        var result = await resp.Content.ReadFromJsonAsync<LoginResult>();
-        if (result?.Token is null)
-        {
-            Snackbar.Add("Token not received", Severity.Error);
-            return;
-        }
-
-        await AuthProvider.MarkUserAsAuthenticated(result.Token);
-
+        Snackbar.Add("Login successful", Severity.Success);
         Nav.NavigateTo("/admin");
     }
-
-    private class LoginResult
-    {
-        public string Token { get; set; } = "";
-    }
-
 }

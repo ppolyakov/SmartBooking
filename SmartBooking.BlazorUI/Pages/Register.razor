@@ -60,10 +60,10 @@
 
         _isLoading = true;
 
-        var result = await AuthService.RegisterAsync(registerRequest);
+        var success = await AuthService.RegisterAsync(registerRequest);
 
         _isLoading = false;
-        if (result)
+        if (success)
         {
             Snackbar.Add("Registration successful! Please log in.", Severity.Success);
             Nav.NavigateTo("/login");
