@@ -4,31 +4,34 @@
 @inject NavigationManager Nav
 @inject ISnackbar Snackbar
 
-<MudPaper Class="p-4 max-w-sm mx-auto">
-    <EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
-        <DataAnnotationsValidator />
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
+    <MudPaper Class="p-4" Elevation="2">
+        <MudText Typo="Typo.h5" Class="mb-4">Login</MudText>
+        <EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
+            <DataAnnotationsValidator />
 
-        <MudTextField For="@(() => loginModel.Email)"
-                      @bind-Value="loginModel.Email"
-                      Label="Email"
-                      Required="true" />
-        <ValidationMessage For="@(() => loginModel.Email)" />
+            <MudTextField For="@(() => loginModel.Email)"
+                          @bind-Value="loginModel.Email"
+                          Label="Email"
+                          Required="true" />
+            <ValidationMessage For="@(() => loginModel.Email)" />
 
-        <MudTextField For="@(() => loginModel.Password)"
-                      @bind-Value="loginModel.Password"
-                      Label="Password"
-                      InputType="InputType.Password"
-                      Required="true" />
-        <ValidationMessage For="@(() => loginModel.Password)" />
+            <MudTextField For="@(() => loginModel.Password)"
+                          @bind-Value="loginModel.Password"
+                          Label="Password"
+                          InputType="InputType.Password"
+                          Required="true" />
+            <ValidationMessage For="@(() => loginModel.Password)" />
 
-        <MudButton ButtonType="ButtonType.Submit"
-                   Color="Color.Primary"
-                   Class="mt-4"
-                   FullWidth="true">
-            Login
-        </MudButton>
-    </EditForm>
-</MudPaper>
+            <MudButton ButtonType="ButtonType.Submit"
+                       Color="Color.Primary"
+                       Class="mt-4"
+                       FullWidth="true">
+                Login
+            </MudButton>
+        </EditForm>
+    </MudPaper>
+</MudContainer>
 
 @code {
     private LoginRequest loginModel = new();

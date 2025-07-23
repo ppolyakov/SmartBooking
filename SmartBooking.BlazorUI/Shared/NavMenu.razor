@@ -1,14 +1,14 @@
 ﻿@using SmartBooking.BlazorUI.Services
 @inject AuthenticationStateProvider AuthStateProvider
 
-<div class="top-row ps-3 navbar navbar-dark">
+@* <div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">SmartBooking.BlazorUI</a>
         <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
             <span class="navbar-toggler-icon"></span>
         </button>
     </div>
-</div>
+</div> *@
 
 <div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
     <MudNavLink Href="timeslots" Icon="@Icons.Material.Filled.Schedule">
@@ -24,12 +24,6 @@
     </AuthorizeView>
     <MudNavLink Href="bookings" Icon="@Icons.Material.Filled.List">
         Bookings
-    </MudNavLink>
-    <MudNavLink Href="login" Icon="@Icons.Material.Filled.Login">
-        Login (Admin)
-    </MudNavLink>
-    <MudNavLink Href="/register" Icon="@Icons.Material.Filled.PersonAdd">
-        Register
     </MudNavLink>
 </div>
 

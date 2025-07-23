@@ -6,6 +6,8 @@ using Microsoft.OpenApi.Models;
 using SmartBooking.Infrastructure.Identity;
 using SmartBooking.Infrastructure.Persistence;
 using SmartBooking.Infrastructure.Seed;
+using SmartBooking.WebAPI.Services;
+using SmartBooking.WebAPI.Services.Interfaces;
 using System.Text;
 using System.Text.Json.Serialization;
 
@@ -85,6 +87,11 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IBookingService, BookingService>();
+builder.Services.AddScoped<IServiceService, ServiceService>();
+builder.Services.AddScoped<ITimeSlotsService, TimeSlotsService>();
+builder.Services.AddScoped<IUserService, UserService>();
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())

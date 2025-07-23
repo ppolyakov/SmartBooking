@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using SmartBooking.BlazorUI.Helpers;
 using SmartBooking.BlazorUI.Services.Interfaces;
+using SmartBooking.Shared;
 using SmartBooking.Shared.Dto;
 using SmartBooking.Shared.Http.Requests;
 using System.Net.Http.Headers;

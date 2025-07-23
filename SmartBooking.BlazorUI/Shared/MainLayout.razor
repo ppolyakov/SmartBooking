@@ -1,52 +1,82 @@
-﻿@using SmartBooking.BlazorUI.Services
-@using SmartBooking.BlazorUI.Services.Provider
+﻿@using Microsoft.AspNetCore.Components.Authorization
 @inherits LayoutComponentBase
-@inject NavigationManager NavigationManager
-@inject JwtAuthStateProvider AuthProvider
-@inject IHttpClientFactory ClientFactory
 
-@* Required *@
 <MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
 <MudPopoverProvider />
 
-@* Needed for dialogs *@
-<MudDialogProvider />
+<MudLayout>
+    <MudAppBar Color="Color.Primary">
+        <MudText Typo="Typo.h6" Class="d-flex align-center">
+            <a class="navbar-brand" href="" style="color:white">SmartBooking</a>
+        </MudText>
 
-@* Needed for snackbars *@
-<MudSnackbarProvider />
+        <MudSpacer />
 
-<PageTitle>SmartBooking.BlazorUI</PageTitle>
+        <AuthorizeView>
+            <Authorized>
+                <MudText Typo="Typo.subtitle2" Class="mr-2">
+                    @context.User.Identity?.Name
+                </MudText>
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Inherit"
+                           OnClick="Logout">
+                    Logout
+                </MudButton>
+            </Authorized>
+            <NotAuthorized>
+                <MudButton Variant="Variant.Text"
+                           Color="Color.Inherit"
+                           OnClick="@(() => NavigateTo("login"))">
+                    Login
+                </MudButton>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Secondary"
+                           Class="ml-2"
+                           OnClick="@(() => NavigateTo("register"))">
+                    Register
+                </MudButton>
+            </NotAuthorized>
+        </AuthorizeView>
+    </MudAppBar>
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+    <MudMainContent>
+        <div class="row no-gutters" style="height: calc(100vh - 64px);">
+            <div class="col-12 col-md-3" style="max-width:20%; overflow:auto;">
+                <MudPaper Class="h-100 d-flex flex-column"
+                          Elevation="4"
+                          Square="true"
+                          Style="box-shadow: 4px 0 8px -2px rgba(0,0,0,0.2);">
+                    <NavMenu />
+                </MudPaper>
+            </div>
 
-    <main>
-        <div class="top-row px-4">
-            <AuthorizeView>
-                <Authorized>
-                    <MudText Color="Color.Success">Logged in as: @context.User.Identity?.Name</MudText>
-                    <MudButton ButtonType="ButtonType.Button" Color="Color.Secondary" OnClick="Logout">Logout</MudButton>
-                </Authorized>
-                <NotAuthorized>
-                    <MudText Color="Color.Error">Not logged in</MudText>
-                </NotAuthorized>
-            </AuthorizeView>
-            <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
+            <div class="col-12 col-md-9" style="overflow:auto;">
+                <div class="pa-4">
+                    @Body
+                </div>
+            </div>
         </div>
+    </MudMainContent>
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div>
+</MudLayout>
 
 @code {
+    [Inject]
+    private NavigationManager NavigationManager { get; set; } = null!;
+
+    [Inject]
+    private JwtAuthStateProvider AuthProvider { get; set; } = null!;
 
     private async Task Logout()
     {
         await AuthProvider.MarkUserAsLoggedOut();
-        NavigationManager.NavigateTo("/", forceLoad: true);
+        NavigateTo("/", forceLoad: true);
+    }
+
+    private void NavigateTo(string url, bool forceLoad = false)
+    {
+        NavigationManager.NavigateTo(url, forceLoad);
     }
 }

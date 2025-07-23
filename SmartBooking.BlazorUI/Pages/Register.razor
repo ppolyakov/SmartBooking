@@ -3,47 +3,50 @@
 @inject NavigationManager Nav
 @inject ISnackbar Snackbar
 
-<MudPaper Class="p-4 max-w-sm mx-auto">
-    <EditForm Model="@registerRequest" OnValidSubmit="HandleRegister">
-        <DataAnnotationsValidator />
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
+    <MudPaper Class="p-4" Elevation="2">
+        <MudText Typo="Typo.h5" Class="mb-4">Register</MudText>
+        <EditForm Model="@registerRequest" OnValidSubmit="HandleRegister">
+            <DataAnnotationsValidator />
 
-        <MudTextField For="@(() => registerRequest.Email)"
-                      @bind-Value="registerRequest.Email"
-                      Label="Email"
-                      Required="true" />
-        <ValidationMessage For="@(() => registerRequest.Email)" />
+            <MudTextField For="@(() => registerRequest.Email)"
+                          @bind-Value="registerRequest.Email"
+                          Label="Email"
+                          Required="true" />
+            <ValidationMessage For="@(() => registerRequest.Email)" />
 
-        <MudTextField For="@(() => registerRequest.Password)"
-                      @bind-Value="registerRequest.Password"
-                      Label="Password"
-                      InputType="InputType.Password"
-                      Required="true" />
-        <ValidationMessage For="@(() => registerRequest.Password)" />
+            <MudTextField For="@(() => registerRequest.Password)"
+                          @bind-Value="registerRequest.Password"
+                          Label="Password"
+                          InputType="InputType.Password"
+                          Required="true" />
+            <ValidationMessage For="@(() => registerRequest.Password)" />
 
-        <MudTextField For="@(() => registerRequest.ConfirmPassword)"
-                      @bind-Value="registerRequest.ConfirmPassword"
-                      Label="Confirm Password"
-                      InputType="InputType.Password"
-                      Required="true" />
-        <ValidationMessage For="@(() => registerRequest.ConfirmPassword)" />
+            <MudTextField For="@(() => registerRequest.ConfirmPassword)"
+                          @bind-Value="registerRequest.ConfirmPassword"
+                          Label="Confirm Password"
+                          InputType="InputType.Password"
+                          Required="true" />
+            <ValidationMessage For="@(() => registerRequest.ConfirmPassword)" />
 
-        <MudButton ButtonType="ButtonType.Submit"
-                   Color="Color.Primary"
-                   Class="mt-4"
-                   FullWidth="true"
-                   Disabled="@_isLoading">
-            @if (_isLoading)
-            {
-                <MudProgressCircular Size="Size.Medium" Class="mr-2" />
-                <MudText>Registering</MudText>
-            }
-            else
-            {
-                <MudText>Register</MudText>
-            }
-        </MudButton>
-    </EditForm>
-</MudPaper>
+            <MudButton ButtonType="ButtonType.Submit"
+                       Color="Color.Primary"
+                       Class="mt-4"
+                       FullWidth="true"
+                       Disabled="@_isLoading">
+                @if (_isLoading)
+                {
+                    <MudProgressCircular Size="Size.Medium" Class="mr-2" />
+                    <MudText>Registering</MudText>
+                }
+                else
+                {
+                    <MudText>Register</MudText>
+                }
+            </MudButton>
+        </EditForm>
+    </MudPaper>
+</MudContainer>
 
 @code {
     private RegisterRequest registerRequest = new();

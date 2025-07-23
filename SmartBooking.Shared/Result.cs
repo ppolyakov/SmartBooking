@@ -1,4 +1,4 @@
-﻿namespace SmartBooking.BlazorUI.Helpers;
+﻿namespace SmartBooking.Shared;
 
 public class Result<T>
 {

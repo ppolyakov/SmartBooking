@@ -1,49 +1,29 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using System.Security.Claims;
-using System.IdentityModel.Tokens.Jwt;
-using SmartBooking.Infrastructure.Identity;
 using SmartBooking.WebAPI.Models;
+using SmartBooking.WebAPI.Services.Interfaces;
 
 namespace SmartBooking.WebAPI.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController : ControllerBase
+public class AuthController(IAuthService authService) : ControllerBase
 {
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly RoleManager<IdentityRole> _roleManager;
-    private readonly IConfiguration _config;
-
-    public AuthController(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, IConfiguration config)
-    {
-        _userManager = userManager;
-        _roleManager = roleManager;
-        _config = config;
-    }
-
     /// <summary>
     /// Registers a new user and assigns them the Admin role.
     /// </summary>
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterDto dto)
     {
-        if (await _userManager.FindByEmailAsync(dto.Email) != null)
-            return BadRequest("User with this email already exists.");
+        if (dto == null)
+        {
+            return BadRequest(new { Error = "Invalid registration data." });
+        }
 
-        var user = new ApplicationUser { UserName = dto.Email, Email = dto.Email };
-        var result = await _userManager.CreateAsync(user, dto.Password);
-
-        if (!result.Succeeded)
-            return BadRequest(result.Errors);
-
-        //if (!await _roleManager.RoleExistsAsync("Admin"))
-        //    await _roleManager.CreateAsync(new IdentityRole("Admin"));
-
-        await _userManager.AddToRoleAsync(user, "User");
-
+        var result = await authService.RegisterAsync(dto);
+        if (!result.IsSuccess)
+        {
+            return BadRequest(new { Error = result.ErrorMessage });
+        }
         return Ok(new { Message = "Registration successful." });
     }
 
@@ -53,34 +33,18 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDto dto)
     {
-        var user = await _userManager.FindByEmailAsync(dto.Email);
-        if (user == null || !await _userManager.CheckPasswordAsync(user, dto.Password))
-            return Unauthorized("Invalid credentials.");
-
-        var claims = new List<Claim>
+        if (dto == null)
         {
-            new Claim(ClaimTypes.NameIdentifier, user.Id),
-            new Claim(ClaimTypes.Name, user.UserName!)
-        };
-        var roles = await _userManager.GetRolesAsync(user);
-        claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
+            return BadRequest(new { Error = "Invalid login data." });
+        }
 
-        var jwtSection = _config.GetSection("Jwt");
-        var keyBytes = Encoding.UTF8.GetBytes(jwtSection["Key"]!);
+        var result = await authService.LoginAsync(dto);
 
-        var creds = new SigningCredentials(
-            new SymmetricSecurityKey(keyBytes),
-            SecurityAlgorithms.HmacSha256);
+        if (!result.IsSuccess)
+        {
+            return BadRequest(new { Error = result.ErrorMessage });
+        }
 
-        var token = new JwtSecurityToken(
-            issuer: jwtSection["Issuer"],
-            audience: jwtSection["Audience"],
-            claims: claims,
-            expires: DateTime.UtcNow.AddHours(1),
-            signingCredentials: creds
-        );
-
-        var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
-        return Ok(new { Token = tokenString });
+        return Ok(new { Token = result.Value });
     }
 }

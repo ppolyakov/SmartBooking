@@ -1,6 +1,7 @@
 ﻿using SmartBooking.BlazorUI.Helpers;
 using SmartBooking.BlazorUI.Services.Interfaces;
 using SmartBooking.BlazorUI.Services.Provider;
+using SmartBooking.Shared;
 using SmartBooking.Shared.Http.Requests;
 using SmartBooking.Shared.Http.Responses;
 

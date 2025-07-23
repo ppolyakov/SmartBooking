@@ -1,4 +1,5 @@
 ﻿using SmartBooking.BlazorUI.Helpers;
+using SmartBooking.Shared;
 using SmartBooking.Shared.Dto;
 using SmartBooking.Shared.Http.Requests;
 

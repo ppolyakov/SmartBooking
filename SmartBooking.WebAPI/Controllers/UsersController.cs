@@ -3,72 +3,66 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using SmartBooking.Infrastructure.Identity;
 using SmartBooking.Shared.Dto;
+using SmartBooking.WebAPI.Services.Interfaces;
 
 [ApiController]
 [Route("api/[controller]")]
-public class UsersController : ControllerBase
+public class UsersController(IUserService userService) : ControllerBase
 {
-    private readonly UserManager<ApplicationUser> _um;
-    private readonly RoleManager<IdentityRole> _rm;
-
-    public UsersController(UserManager<ApplicationUser> um, RoleManager<IdentityRole> rm)
-    {
-        _um = um;
-        _rm = rm;
-    }
-
     [HttpGet]
     public async Task<ActionResult<List<UserDto>>> GetAll()
     {
-        var users = _um.Users.ToList();
-        var list = new List<UserDto>();
-        foreach (var u in users)
-        {
-            var roles = await _um.GetRolesAsync(u);
-            list.Add(new UserDto { Id = u.Id, Email = u.Email!, Roles = roles.ToList() });
-        }
+        var result = await userService.GetAll();
+        if (!result.IsSuccess)
+            return BadRequest(result.ErrorMessage);
+
+        var list = result.Value;
         return Ok(list);
     }
 
     [HttpPost]
     public async Task<ActionResult<UserDto>> Create(UserCreateDto dto)
     {
-        var user = new ApplicationUser { UserName = dto.Email, Email = dto.Email };
-        var res = await _um.CreateAsync(user, dto.Password);
-        if (!res.Succeeded) return BadRequest(res.Errors);
-
-        await _um.AddToRoleAsync(user, "User");
-        if (dto.IsAdmin) await _um.AddToRoleAsync(user, "Admin");
-
-        var roles = await _um.GetRolesAsync(user);
-        return Ok(new UserDto { Id = user.Id, Email = user.Email!, Roles = roles.ToList() });
+        if (dto == null)
+        {
+            return BadRequest(new { Error = "Invalid user data." });
+        }
+        var result = await userService.Create(dto);
+        if (!result.IsSuccess)
+        {
+            return BadRequest(new { Error = result.ErrorMessage });
+        }
+        var user = result.Value;
+        return Ok(user);
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(string id, UserEditDto dto)
     {
-        var user = await _um.FindByIdAsync(id);
-        if (user == null) return NotFound();
-
-        user.Email = dto.Email;
-        user.UserName = dto.Email;
-        await _um.UpdateAsync(user);
-
-        var roles = await _um.GetRolesAsync(user);
-        if (dto.IsAdmin && !roles.Contains("Admin"))
-            await _um.AddToRoleAsync(user, "Admin");
-        if (!dto.IsAdmin && roles.Contains("Admin"))
-            await _um.RemoveFromRoleAsync(user, "Admin");
-
+        if (string.IsNullOrEmpty(id) || dto == null)
+        {
+            return BadRequest(new { Error = "Invalid user ID or data." });
+        }
+        var result = await userService.Update(id, dto);
+        if (!result.IsSuccess)
+        {
+            return BadRequest(new { Error = result.ErrorMessage });
+        }
         return NoContent();
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(string id)
     {
-        var user = await _um.FindByIdAsync(id);
-        if (user == null) return NotFound();
-        await _um.DeleteAsync(user);
+        if (string.IsNullOrEmpty(id))
+        {
+            return BadRequest(new { Error = "Invalid user ID." });
+        }
+        var result = await userService.Delete(id);
+        if (!result.IsSuccess)
+        {
+            return BadRequest(new { Error = result.ErrorMessage });
+        }
         return NoContent();
     }
 }

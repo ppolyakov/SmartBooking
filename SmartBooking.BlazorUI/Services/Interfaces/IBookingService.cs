@@ -1,4 +1,4 @@
-﻿using SmartBooking.BlazorUI.Helpers;
+﻿using SmartBooking.Shared;
 using SmartBooking.Shared.Dto;
 
 namespace SmartBooking.BlazorUI.Services.Interfaces;

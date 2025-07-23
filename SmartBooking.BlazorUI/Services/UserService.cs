@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
-using SmartBooking.BlazorUI.Helpers;
 using SmartBooking.BlazorUI.Services.Interfaces;
+using SmartBooking.Shared;
 using SmartBooking.Shared.Dto;
 using SmartBooking.Shared.Http.Requests;
 using System.Net.Http.Headers;
@@ -19,7 +19,7 @@ public class UserService(HttpClient http, ProtectedLocalStorage storage, ILogger
 
     public async Task<Result<List<UserDto>>> GetAllAsync()
     {
-        try 
+        try
         {
             await AddAuthHeaderAsync();
             var users = await http.GetFromJsonAsync<List<UserDto>>("users");
@@ -45,7 +45,7 @@ public class UserService(HttpClient http, ProtectedLocalStorage storage, ILogger
 
     public async Task<Result<bool>> CreateAsync(UserCreateRequest dto)
     {
-        try 
+        try
         {
             await AddAuthHeaderAsync();
             var response = await http.PostAsJsonAsync("users", dto);
@@ -67,7 +67,7 @@ public class UserService(HttpClient http, ProtectedLocalStorage storage, ILogger
 
     public async Task<Result<bool>> UpdateAsync(string id, UserEditRequest dto)
     {
-        try 
+        try
         {
             await AddAuthHeaderAsync();
             var response = await http.PutAsJsonAsync($"users/{id}", dto);
@@ -89,7 +89,7 @@ public class UserService(HttpClient http, ProtectedLocalStorage storage, ILogger
 
     public async Task<Result<bool>> DeleteAsync(string id)
     {
-        try 
+        try
         {
             await AddAuthHeaderAsync();
             var response = await http.DeleteAsync($"users/{id}");

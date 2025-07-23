@@ -1,24 +1,19 @@
-﻿@page "/bookings"
+﻿@attribute [Authorize(Roles = "Admin, User")]
+@page "/bookings"
 @inject IBookingService BookingService
 @inject ISnackbar Snackbar
 
 <MudPaper Class="p-4">
     <MudText Typo="Typo.h5" Class="mb-4">All Bookings</MudText>
 
-    <MudTable Items="_bookings" Hover="true" Dense="true">
-        <HeaderContent>
-            <MudTh>Date & Time</MudTh>
-            <MudTh>Service</MudTh>
-            <MudTh>Client</MudTh>
-            <MudTh>Email</MudTh>
-        </HeaderContent>
-        <RowTemplate>
-            <MudTd>@context.StartTime.ToString("g")</MudTd>
-            <MudTd>@context.ServiceTitle</MudTd>
-            <MudTd>@context.ClientName</MudTd>
-            <MudTd>@context.ClientEmail</MudTd>
-        </RowTemplate>
-    </MudTable>
+    <MudDataGrid Items="_bookings" Hover="true" Dense="true">
+        <Columns>
+            <PropertyColumn Property="x => x.ServiceTitle" Title="Service" />
+            <PropertyColumn Property="x => x.StartTime" Title="Start Time" />
+            <PropertyColumn Property="x => x.ClientName" Title="Client Name" />
+            <PropertyColumn Property="x => x.ClientEmail" Title="Client Email" />
+        </Columns>
+    </MudDataGrid>
 </MudPaper>
 
 @code {
