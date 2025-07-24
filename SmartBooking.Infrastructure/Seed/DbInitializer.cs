@@ -13,12 +13,18 @@ public static class DbInitializer
         var haircut = new Service
         {
             Title = "Haircut",
-            Duration = TimeSpan.FromMinutes(30)
+            Duration = 30,
+            Date = DateTime.Today,
+            Description = "Professional haircut service",
+            Price = 25.00m
         };
         var massage = new Service
         {
             Title = "Massage",
-            Duration = TimeSpan.FromHours(1)
+            Duration = 60,
+            Date = DateTime.Today,
+            Description = "Relaxing full-body massage",
+            Price = 50.00m
         };
         db.Services.AddRange(haircut, massage);
         db.SaveChanges();
@@ -26,18 +32,18 @@ public static class DbInitializer
         var slots = new List<TimeSlot>();
         for (int day = 0; day < 3; day++)
         {
-            var date = DateTime.Today.AddDays(day).AddHours(9);
+            var baseTime = DateTime.Today.AddDays(day).AddHours(9);
             for (int i = 0; i < 8; i++)
             {
                 slots.Add(new TimeSlot
                 {
                     ServiceId = haircut.Id,
-                    StartTime = date.AddHours(i)
+                    StartTime = baseTime.AddMinutes(haircut.Duration * i)
                 });
                 slots.Add(new TimeSlot
                 {
                     ServiceId = massage.Id,
-                    StartTime = date.AddHours(i)
+                    StartTime = baseTime.AddMinutes(massage.Duration * i)
                 });
             }
         }

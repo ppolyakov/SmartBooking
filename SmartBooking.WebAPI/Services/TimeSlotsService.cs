@@ -37,25 +37,38 @@ public class TimeSlotsService(AppDbContext db, ILogger<TimeSlotsService> logger)
             }
 
             var slots = new List<TimeSlot>();
-            var start = date.Date.AddHours(9); // Start 9:00
-            var end = date.Date.AddHours(17);  // End 17:00
+            var slotLength = TimeSpan.FromMinutes(service.Duration);
+            var start = date.Date.AddHours(9);
+            var end = date.Date.AddHours(17);
 
-            while (start + service.Duration <= end)
+            while (start.Add(slotLength) <= end)
             {
-                if (!await db.TimeSlots.AnyAsync(t => t.StartTime == start && t.ServiceId == serviceId))
+                var exists = await db.TimeSlots.AnyAsync(t =>
+                    t.ServiceId == serviceId &&
+                    t.StartTime == start);
+
+                if (!exists)
                 {
                     slots.Add(new TimeSlot
                     {
-                        StartTime = start,
-                        ServiceId = serviceId
+                        ServiceId = serviceId,
+                        StartTime = start
                     });
                 }
 
-                start = start.Add(service.Duration);
+                start = start.Add(slotLength);
             }
 
-            db.TimeSlots.AddRange(slots);
-            await db.SaveChangesAsync();
+            if (slots.Count > 0)
+            {
+                db.TimeSlots.AddRange(slots);
+                await db.SaveChangesAsync();
+                logger.LogInformation("Generated {Count} slots for service {ServiceId} on {Date}.", slots.Count, serviceId, date.Date);
+            }
+            else
+            {
+                logger.LogInformation("No new slots generated for service {ServiceId} on {Date}.", serviceId, date.Date);
+            }
 
             return Result<IEnumerable<TimeSlot>>.Success(slots);
         }

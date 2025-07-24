@@ -2,20 +2,17 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using SmartBooking.Infrastructure.Identity;
+using SmartBooking.Infrastructure.Persistence;
 
 #nullable disable
 
-namespace SmartBooking.Infrastructure.Persistence.Migrations.Identity
+namespace SmartBooking.Infrastructure.Migrations
 {
-    [DbContext(typeof(AuthDbContext))]
-    [Migration("20250718104013_InitIdentity")]
-    partial class InitIdentity
+    [DbContext(typeof(AppDbContext))]
+    partial class AppDbContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.7");
@@ -148,7 +145,77 @@ namespace SmartBooking.Infrastructure.Persistence.Migrations.Identity
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("SmartBooking.Infrastructure.Identity.ApplicationUser", b =>
+            modelBuilder.Entity("SmartBooking.Domain.Entities.Booking", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("TimeSlotId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TimeSlotId")
+                        .IsUnique();
+
+                    b.ToTable("Bookings");
+                });
+
+            modelBuilder.Entity("SmartBooking.Domain.Entities.Service", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Duration")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Services");
+                });
+
+            modelBuilder.Entity("SmartBooking.Domain.Entities.TimeSlot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("ServiceId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("StartTime")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ServiceId");
+
+                    b.ToTable("TimeSlots");
+                });
+
+            modelBuilder.Entity("SmartBooking.Infrastructure.Persistence.ApplicationUser", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("TEXT");
@@ -223,7 +290,7 @@ namespace SmartBooking.Infrastructure.Persistence.Migrations.Identity
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
                 {
-                    b.HasOne("SmartBooking.Infrastructure.Identity.ApplicationUser", null)
+                    b.HasOne("SmartBooking.Infrastructure.Persistence.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -232,7 +299,7 @@ namespace SmartBooking.Infrastructure.Persistence.Migrations.Identity
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
-                    b.HasOne("SmartBooking.Infrastructure.Identity.ApplicationUser", null)
+                    b.HasOne("SmartBooking.Infrastructure.Persistence.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -247,7 +314,7 @@ namespace SmartBooking.Infrastructure.Persistence.Migrations.Identity
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("SmartBooking.Infrastructure.Identity.ApplicationUser", null)
+                    b.HasOne("SmartBooking.Infrastructure.Persistence.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -256,11 +323,43 @@ namespace SmartBooking.Infrastructure.Persistence.Migrations.Identity
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
-                    b.HasOne("SmartBooking.Infrastructure.Identity.ApplicationUser", null)
+                    b.HasOne("SmartBooking.Infrastructure.Persistence.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("SmartBooking.Domain.Entities.Booking", b =>
+                {
+                    b.HasOne("SmartBooking.Domain.Entities.TimeSlot", "TimeSlot")
+                        .WithOne("Booking")
+                        .HasForeignKey("SmartBooking.Domain.Entities.Booking", "TimeSlotId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("TimeSlot");
+                });
+
+            modelBuilder.Entity("SmartBooking.Domain.Entities.TimeSlot", b =>
+                {
+                    b.HasOne("SmartBooking.Domain.Entities.Service", "Service")
+                        .WithMany("TimeSlots")
+                        .HasForeignKey("ServiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Service");
+                });
+
+            modelBuilder.Entity("SmartBooking.Domain.Entities.Service", b =>
+                {
+                    b.Navigation("TimeSlots");
+                });
+
+            modelBuilder.Entity("SmartBooking.Domain.Entities.TimeSlot", b =>
+                {
+                    b.Navigation("Booking");
                 });
 #pragma warning restore 612, 618
         }

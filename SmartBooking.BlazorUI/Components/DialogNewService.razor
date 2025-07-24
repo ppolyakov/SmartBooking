@@ -1,0 +1,29 @@
+﻿@inject IServiceService ServiceService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">New Service</MudText>
+    </TitleContent>
+    <DialogContent>
+        <EditForm Context="service" Model="Service">
+            <DataAnnotationsValidator />
+            <MudTextField @bind-Value="@Service.Title" Label="Title" Required="true" />
+            <MudNumericField T="int" @bind-Value="@Service.Duration" Label="Duration (minutes)" Required="true" />
+        </EditForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="() => MudDialog.Close(DialogResult.Ok(true))" Color="Color.Primary">Save</MudButton>
+        <MudButton OnClick="() => MudDialog.Cancel()" Color="Color.Secondary">Cancel</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    private ServiceDto _service = new ServiceDto();
+    [Parameter]
+    public ServiceDto Service { get; set; } = new ServiceDto();
+
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; }
+}

@@ -2,20 +2,21 @@
 @page "/admin"
 @inject IServiceService ServiceService
 @inject ITimeSlotsService TimeSlotService
-@inject NavigationManager Nav
+@inject IDialogService DialogService
+@inject NavigationManager NavigationManager
 @inject ISnackbar Snackbar
 
 <MudPaper Class="p-4">
     <MudText Typo="Typo.h5" Class="mb-4">Admin Dashboard</MudText>
 
-    <MudButton StartIcon="@Icons.Material.Filled.Add" OnClick="AddNewService" Color="Color.Primary" Class="mb-4">
+    <MudButton StartIcon="@Icons.Material.Filled.Add" OnClick="OpenDialogNewService" Color="Color.Primary" Class="mb-4">
         Add New Service
     </MudButton>
 
     <MudExpansionPanels>
         @foreach (var service in _services)
         {
-            <MudExpansionPanel Text="@(service.Title + " " + (service.Duration.TotalMinutes + "min"))">
+            <MudExpansionPanel Text="@(service.Title + " " + (service.Duration + "min"))">
                 <MudText Typo="Typo.subtitle2">Time Slots</MudText>
 
                 <MudButton Color="Color.Info" OnClick="() => GenerateSlots(service.Id)" Disabled="@(_generatingServiceId == service.Id)">
@@ -66,6 +67,8 @@
     </MudExpansionPanels>
 </MudPaper>
 
+
+
 @code {
     private List<ServiceWithSlotsDto> _services = [];
     private Guid? _generatingServiceId;
@@ -83,9 +86,41 @@
         }
     }
 
-    private void AddNewService()
+    private async Task OpenDialogNewService()
     {
-        Nav.NavigateTo("/admin/new-service");
+        var options = new DialogOptions { CloseOnEscapeKey = true };
+
+        var newService = new ServiceDto();
+
+        var parameters = new DialogParameters<DialogNewService> { { x => x.Service, newService } };
+        var dialog = await DialogService.ShowAsync<DialogNewService>("Create New Service", parameters, options);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            var service = await ServiceService.CreateServiceAsync(newService);
+
+            if (!service.IsSuccess)
+            {
+                Snackbar.Add($"Failed to create service: {service.ErrorMessage}", Severity.Error);
+            }
+
+            Snackbar.Add("Service created successfully", Severity.Success);
+
+            var resultServices = await ServiceService.GetServicesWithSlotsAsync();
+            if (resultServices.IsSuccess)
+            {
+                _services = resultServices.Value;
+            }
+            else
+            {
+                Snackbar.Add($"Failed to refresh services: {resultServices.ErrorMessage}", Severity.Error);
+            }
+        }
+        else
+        {
+            Snackbar.Add("Failed to create service", Severity.Error);
+        }
     }
 
     private async Task GenerateSlots(Guid serviceId)

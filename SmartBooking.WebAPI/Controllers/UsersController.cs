@@ -1,7 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using SmartBooking.Infrastructure.Identity;
+﻿using Microsoft.AspNetCore.Mvc;
 using SmartBooking.Shared.Dto;
 using SmartBooking.WebAPI.Services.Interfaces;
 

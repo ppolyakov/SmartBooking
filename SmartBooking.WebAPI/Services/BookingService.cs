@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SmartBooking.Domain.Entities;
-using SmartBooking.Infrastructure.Identity;
 using SmartBooking.Infrastructure.Persistence;
 using SmartBooking.Shared;
 using SmartBooking.Shared.Dto;

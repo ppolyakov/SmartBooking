@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SmartBooking.Domain.Entities;
-using SmartBooking.Infrastructure.Identity;
 using SmartBooking.Infrastructure.Persistence;
 using SmartBooking.Shared;
 using SmartBooking.Shared.Dto;
@@ -47,16 +46,16 @@ public class ServiceService(AppDbContext db, UserManager<ApplicationUser> userMa
         try
         {
             var services = await db.Services
-                    .Include(s => s.TimeSlots)
-                        .ThenInclude(ts => ts.Booking)
-                    .ToListAsync();
+            .Include(s => s.TimeSlots)
+                .ThenInclude(ts => ts.Booking)
+            .ToListAsync();
 
             var result = new List<ServiceWithSlotsDto>(services.Count);
 
             foreach (var service in services)
             {
+                // Для каждого слота собираем информацию о клиенте, если забронировано
                 var slots = new List<TimeSlotWithClientDto>(service.TimeSlots.Count);
-
                 foreach (var ts in service.TimeSlots.OrderBy(ts => ts.StartTime))
                 {
                     string? email = null;
@@ -80,6 +79,9 @@ public class ServiceService(AppDbContext db, UserManager<ApplicationUser> userMa
                     Id = service.Id,
                     Title = service.Title,
                     Duration = service.Duration,
+                    Date = service.Date,
+                    Description = service.Description,
+                    Price = service.Price,
                     Slots = slots
                 });
             }

@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
-using SmartBooking.Infrastructure.Identity;
+using SmartBooking.Infrastructure.Persistence;
 using SmartBooking.Shared;
 using SmartBooking.WebAPI.Models;
 using SmartBooking.WebAPI.Services.Interfaces;

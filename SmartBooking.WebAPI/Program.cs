@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using SmartBooking.Infrastructure.Identity;
 using SmartBooking.Infrastructure.Persistence;
 using SmartBooking.Infrastructure.Seed;
 using SmartBooking.WebAPI.Services;
@@ -53,15 +52,12 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddDbContext<AppDbContext>(opts =>
     opts.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddDbContext<AuthDbContext>(opts =>
-    opts.UseSqlite(builder.Configuration.GetConnectionString("AuthConnection")));
-
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(opts =>
 {
     opts.Password.RequireDigit = true;
     opts.Password.RequiredLength = 6;
 })
-    .AddEntityFrameworkStores<AuthDbContext>()
+    .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
 var jwtSection = builder.Configuration.GetSection("Jwt");
@@ -96,7 +92,7 @@ var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
-    var authDb = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
+    var authDb = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     authDb.Database.Migrate();
 
     var roleMgr = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();

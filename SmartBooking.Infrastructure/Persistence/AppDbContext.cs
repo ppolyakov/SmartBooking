@@ -1,24 +1,23 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using SmartBooking.Domain.Entities;
 
 namespace SmartBooking.Infrastructure.Persistence;
 
-public class AppDbContext : DbContext
+public class AppDbContext : IdentityDbContext<ApplicationUser>
 {
     public AppDbContext(DbContextOptions<AppDbContext> options)
-        : base(options)
+        : base(options) { }
+
+    public DbSet<Service> Services { get; set; } = null!;
+    public DbSet<TimeSlot> TimeSlots { get; set; } = null!;
+    public DbSet<Booking> Bookings { get; set; } = null!;
+
+    protected override void OnModelCreating(ModelBuilder builder)
     {
-    }
+        base.OnModelCreating(builder);
 
-    public DbSet<Service> Services => Set<Service>();
-    public DbSet<TimeSlot> TimeSlots => Set<TimeSlot>();
-    public DbSet<Booking> Bookings => Set<Booking>();
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        base.OnModelCreating(modelBuilder);
-
-        modelBuilder.Entity<TimeSlot>()
+        builder.Entity<TimeSlot>()
             .HasOne(t => t.Booking)
             .WithOne(b => b.TimeSlot)
             .HasForeignKey<Booking>(b => b.TimeSlotId)
