@@ -7,10 +7,11 @@ using SmartBooking.Shared.Dto;
 using SmartBooking.Shared.Http.Requests;
 using SmartBooking.WebAPI.Services.Interfaces;
 
-public class BookingService(AppDbContext db, UserManager<ApplicationUser> userManager, ILogger<BookingService> logger) : IBookingService
+public class BookingService(AppDbContext db, INotificationService notifications, UserManager<ApplicationUser> userManager, ILogger<BookingService> logger) : IBookingService
 {
     private readonly AppDbContext _db = db;
     private readonly UserManager<ApplicationUser> _userManager = userManager;
+    private readonly INotificationService _notifications = notifications;
     private readonly ILogger<BookingService> _logger = logger;
 
     public async Task<Result<BookingDto>> CreateBookingAsync(BookSlotRequest request, CancellationToken ct = default)
@@ -53,6 +54,14 @@ public class BookingService(AppDbContext db, UserManager<ApplicationUser> userMa
             ClientName = user.UserName!,
             ClientEmail = user.Email!
         };
+
+        _ = _notifications.SendBookingConfirmationAsync(
+                toEmail: user.Email!,
+                toName: user.UserName!,
+                bookingId: booking.Id,
+                startTime: slot.StartTime,
+                serviceTitle: slot.Service.Title,
+                ct);
 
         return Result<BookingDto>.Success(dto);
     }

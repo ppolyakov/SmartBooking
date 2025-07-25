@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartBooking.BlazorUI", "Sm
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartBooking.Shared", "SmartBooking.Shared\SmartBooking.Shared.csproj", "{7A6D3C5A-339F-459E-A47E-452843ADB043}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartBooking.Tests", "SmartBooking.Tests\SmartBooking.Tests.csproj", "{D1538BBD-49A2-7CAF-2131-589F5916AA80}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +47,10 @@ Global
 		{7A6D3C5A-339F-459E-A47E-452843ADB043}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7A6D3C5A-339F-459E-A47E-452843ADB043}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7A6D3C5A-339F-459E-A47E-452843ADB043}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D1538BBD-49A2-7CAF-2131-589F5916AA80}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D1538BBD-49A2-7CAF-2131-589F5916AA80}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D1538BBD-49A2-7CAF-2131-589F5916AA80}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D1538BBD-49A2-7CAF-2131-589F5916AA80}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

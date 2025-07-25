@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using SmartBooking.Infrastructure.Persistence;
 using SmartBooking.Infrastructure.Seed;
+using SmartBooking.WebAPI.Models;
 using SmartBooking.WebAPI.Services;
 using SmartBooking.WebAPI.Services.Interfaces;
 using System.Text;
@@ -88,6 +89,12 @@ builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IServiceService, ServiceService>();
 builder.Services.AddScoped<ITimeSlotsService, TimeSlotsService>();
 builder.Services.AddScoped<IUserService, UserService>();
+
+builder.Services.Configure<SmtpSettings>(
+    builder.Configuration.GetSection("Smtp"));
+
+builder.Services.AddTransient<INotificationService, SmtpNotificationService>();
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
