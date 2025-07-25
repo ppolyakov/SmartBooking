@@ -5,6 +5,6 @@ namespace SmartBooking.WebAPI.Services.Interfaces;
 
 public interface IAuthService
 {
-    Task<Result<bool>> RegisterAsync(RegisterDto registerDto);
-    Task<Result<string>> LoginAsync(LoginDto loginDto);
+    Task<Result<bool>> RegisterAsync(RegisterDto registerDto, CancellationToken ct = default);
+    Task<Result<string>> LoginAsync(LoginDto loginDto, CancellationToken ct = default);
 }

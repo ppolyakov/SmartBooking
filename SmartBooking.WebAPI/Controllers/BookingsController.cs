@@ -1,50 +1,61 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SmartBooking.Domain.Entities;
+using SmartBooking.Shared.Dto;
 using SmartBooking.Shared.Http.Requests;
 using SmartBooking.WebAPI.Models;
 using SmartBooking.WebAPI.Services.Interfaces;
 
-namespace SmartBooking.WebAPI.Controllers;
-
 [ApiController]
 [Route("api/[controller]")]
-public class BookingsController(IBookingService bookingService) : ControllerBase
+public class BookingsController : ControllerBase
 {
+    private readonly IBookingService _bookingService;
+    private readonly ILogger<BookingsController> _logger;
+
+    public BookingsController(IBookingService bookingService, ILogger<BookingsController> logger)
+    {
+        _bookingService = bookingService;
+        _logger = logger;
+    }
+
+    /// <summary>
+    /// Retrieve all bookings (Admin only).
+    /// </summary>
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Booking>>> GetAll()
+    [ProducesResponseType(typeof(IEnumerable<BookingDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<IEnumerable<BookingDto>>> GetAllAsync(CancellationToken ct)
     {
-        var result = await bookingService.GetAllBookingsAsync();
+        var result = await _bookingService.GetAllBookingsAsync(ct);
         if (!result.IsSuccess)
-            return BadRequest(result.ErrorMessage);
-        var bookings = result.Value;
-
-        return Ok(bookings);
+        {
+            _logger.LogError("Failed to retrieve bookings: {Error}", result.ErrorMessage);
+            return StatusCode(StatusCodes.Status500InternalServerError, new { result.ErrorMessage });
+        }
+        _logger.LogInformation("Retrieved {Count} bookings.", ((IEnumerable<BookingDto>)result.Value).Count());
+        return Ok(result.Value);
     }
 
+    /// <summary>
+    /// Create a new booking for the current user.
+    /// </summary>
     [HttpPost]
-    public async Task<ActionResult> Create([FromBody] BookSlotRequest request)
+    [ProducesResponseType(typeof(BookingDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<BookingDto>> CreateAsync([FromBody] BookSlotRequest request, CancellationToken ct)
     {
-        if (request == null)
-        {
-            return BadRequest(new { Error = "Invalid booking request." });
-        }
-        var result = await bookingService.CreateBookingAsync(request);
+        var result = await _bookingService.CreateBookingAsync(request, ct);
         if (!result.IsSuccess)
         {
-            return BadRequest(new { Error = result.ErrorMessage });
+            _logger.LogWarning("CreateBookingAsync failed for User {UserId}, Slot {SlotId}: {Error}", request.UserId, request.SlotId, result.ErrorMessage);
+
+            return BadRequest(new { result.ErrorMessage });
         }
-        var booking = result.Value;
-        return Ok(booking);
-    }
 
-    [HttpGet("all")]
-    public async Task<ActionResult<List<BookingDto>>> GetAllBookings()
-    {
-        var result = await bookingService.GetAllBookingsAsync();
-        if (!result.IsSuccess)
-            return BadRequest(result.ErrorMessage);
+        // Service returns a BookingDto
+        var dto = result.Value;
 
-        var bookings = result.Value;
-        return Ok(bookings);
+        _logger.LogInformation("Booking {BookingId} created.", dto.Id);
+        // Use the named route "GetBookingById" so clients can locate the new resource
+        return CreatedAtRoute(routeName: "GetBookingById", routeValues: new { id = dto.Id }, value: dto);
     }
 }

@@ -10,26 +10,30 @@
         Add User
     </MudButton>
 
-    <MudTable Items="_users" Hover="true" Class="mt-4">
-        <HeaderContent>
-            <MudTh>Email</MudTh>
-            <MudTh>IsAdmin</MudTh>
-            <MudTh></MudTh>
-        </HeaderContent>
-        <RowTemplate>
-            <MudTd>@context.Email</MudTd>
-            <MudTd>@(context.Roles.Contains("Admin") ? "Yes" : "No")</MudTd>
-            <MudTd>
-                <MudButton Size="Size.Small" OnClick="() => ShowEditDialog(context)">Edit</MudButton>
-                <MudButton Size="Size.Small" Color="Color.Error" OnClick="() => Delete(context.Id)">Delete</MudButton>
-            </MudTd>
-        </RowTemplate>
-    </MudTable>
+    <MudDataGrid @ref="dataGrid" Items="_users" Hover="true">
+        <Columns>
+            <PropertyColumn Property="x => x.Email" Title="Email" />
+            <TemplateColumn Title="Admin">
+                <CellTemplate>
+                    <MudText>@((context.Item.Roles.Contains("Admin") ? "Yes" : "No"))</MudText>
+                </CellTemplate>
+            </TemplateColumn>
+            <TemplateColumn CellClass="d-flex justify-end">
+                <CellTemplate>
+                    <MudStack Row>
+                        <MudButton Size="@Size.Small" Variant="@Variant.Filled" Color="@Color.Secondary" OnClick="() => ShowEditDialog(context.Item)">Edit</MudButton>
+                        <MudButton Size="@Size.Small" Variant="@Variant.Filled" Color="@Color.Error" OnClick="() => Delete(context.Item.Id)">Delete</MudButton>
+                    </MudStack>
+                </CellTemplate>
+            </TemplateColumn>
+        </Columns>
+    </MudDataGrid>
 </MudPaper>
 
 @code {
     private List<UserDto> _users = [];
     private UserDto? _editUser;
+    private MudDataGrid<UserDto> dataGrid;
 
     protected override async Task OnInitializedAsync()
     {
@@ -42,7 +46,7 @@
         {
             Snackbar.Add($"Failed to load users: {result.ErrorMessage}", Severity.Error);
         }
-    } 
+    }
 
     private async Task ShowAddDialog()
     {
@@ -51,9 +55,9 @@
             ["IsNew"] = true
         };
         var dialog = await DialogService.ShowAsync<UserEditDialog>("Add User", parameters);
-        var result = dialog.Result;
+        var result = await dialog.Result;
 
-        if (!result.IsCompleted)
+        if (!result.Canceled)
             await Reload();
     }
 
@@ -65,12 +69,13 @@
             ["IsNew"] = false
         };
         var dialog = await DialogService.ShowAsync<UserEditDialog>("Edit User", parameters);
-        var result = dialog.Result;
-        if (!result.IsCanceled)
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
             await Reload();
     }
 
-    async Task Delete(string id)
+    private async Task Delete(string id)
     {
         var result = await UserService.DeleteAsync(id);
         if (result.IsSuccess)
@@ -78,11 +83,11 @@
             Snackbar.Add("Deleted", Severity.Success);
             await Reload();
         }
-        else 
+        else
             Snackbar.Add($"Delete failed: {result.ErrorMessage}", Severity.Error);
     }
 
-    async Task Reload()
+    private async Task Reload()
     {
         var result = await UserService.GetAllAsync();
         if (result.IsSuccess)
@@ -93,6 +98,10 @@
         {
             Snackbar.Add($"Failed to reload users: {result.ErrorMessage}", Severity.Error);
         }
+
+        if (dataGrid != null)
+            await dataGrid.ReloadServerData();
+
         StateHasChanged();
     }
 }

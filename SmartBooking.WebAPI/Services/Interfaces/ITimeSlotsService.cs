@@ -6,7 +6,7 @@ namespace SmartBooking.WebAPI.Services.Interfaces;
 
 public interface ITimeSlotsService
 {
-    Task<Result<IEnumerable<TimeSlotDto>>> GetAllTimeSlotsAsync();
-    Task<Result<IEnumerable<TimeSlot>>> GenerateSlots(Guid serviceId, DateTime date);
-    Task<Result<bool>> Delete(Guid id);
+    Task<Result<IEnumerable<TimeSlotDto>>> GetAllAsync(CancellationToken ct = default);
+    Task<Result<IEnumerable<TimeSlotDto>>> GenerateAsync(Guid serviceId, DateTime date, CancellationToken ct = default);
+    Task<Result<bool>> DeleteAsync(Guid id, CancellationToken ct = default);
 }

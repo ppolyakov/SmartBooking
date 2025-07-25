@@ -88,7 +88,7 @@
 
     private async Task OpenDialogNewService()
     {
-        var options = new DialogOptions { CloseOnEscapeKey = true };
+        var options = new DialogOptions { CloseOnEscapeKey = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
 
         var newService = new ServiceDto();
 
@@ -98,15 +98,6 @@
 
         if (!result.Canceled)
         {
-            var service = await ServiceService.CreateServiceAsync(newService);
-
-            if (!service.IsSuccess)
-            {
-                Snackbar.Add($"Failed to create service: {service.ErrorMessage}", Severity.Error);
-            }
-
-            Snackbar.Add("Service created successfully", Severity.Success);
-
             var resultServices = await ServiceService.GetServicesWithSlotsAsync();
             if (resultServices.IsSuccess)
             {
@@ -116,10 +107,6 @@
             {
                 Snackbar.Add($"Failed to refresh services: {resultServices.ErrorMessage}", Severity.Error);
             }
-        }
-        else
-        {
-            Snackbar.Add("Failed to create service", Severity.Error);
         }
     }
 

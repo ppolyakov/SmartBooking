@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using SmartBooking.Infrastructure.Persistence;
 using SmartBooking.Shared;
@@ -8,62 +9,67 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace SmartBooking.WebAPI.Services;
-
-public class AuthService(UserManager<ApplicationUser> userManager, IConfiguration config, ILogger<AuthService> logger) : IAuthService
+public class AuthService(UserManager<ApplicationUser> users, IOptions<JwtSettings> jwtOptions, ILogger<AuthService> logger) : IAuthService
 {
-    public async Task<Result<bool>> RegisterAsync(RegisterDto registerDto)
+    private readonly UserManager<ApplicationUser> _users = users;
+    private readonly JwtSettings _jwt = jwtOptions.Value;
+    private readonly ILogger<AuthService> _logger = logger;
+
+    public async Task<Result<bool>> RegisterAsync(RegisterDto dto, CancellationToken ct = default)
     {
-        if (await userManager.FindByEmailAsync(registerDto.Email) != null)
+        if (await _users.FindByEmailAsync(dto.Email) != null)
+            return Result<bool>.Failure("Email is already taken.");
+
+        var userResult = await _users.CreateAsync(
+            new ApplicationUser { UserName = dto.Email, Email = dto.Email },
+            dto.Password);
+
+        if (!userResult.Succeeded)
         {
-            logger.LogWarning("User with email {Email} already exists.", registerDto.Email);
-            return Result<bool>.Failure("User with this email already exists.");
+            var errors = string.Join("; ", userResult.Errors.Select(e => e.Description));
+            _logger.LogError("Registration errors for {Email}: {Errors}", dto.Email, errors);
+            return Result<bool>.Failure(errors);
         }
 
-        var user = new ApplicationUser { UserName = registerDto.Email, Email = registerDto.Email };
-        var result = await userManager.CreateAsync(user, registerDto.Password);
+        var user = await _users.FindByEmailAsync(dto.Email);
 
-        if (!result.Succeeded)
+        if (user == null)
         {
-            logger.LogError("User registration failed: {Errors}", string.Join(", ", result.Errors.Select(e => e.Description)));
-            return Result<bool>.Failure("User registration failed: " + string.Join(", ", result.Errors.Select(e => e.Description)));
+            _logger.LogError("User {Email} not found after creation.", dto.Email);
+            return Result<bool>.Failure("User creation failed.");
         }
 
-        await userManager.AddToRoleAsync(user, "User");
+        await _users.AddToRoleAsync(user, "User");
+
+        _logger.LogInformation("User {Email} registered successfully.", dto.Email);
         return Result<bool>.Success(true);
     }
-    public async Task<Result<string>> LoginAsync(LoginDto loginDto)
+
+    public async Task<Result<string>> LoginAsync(LoginDto dto, CancellationToken ct = default)
     {
-        var user = await userManager.FindByEmailAsync(loginDto.Email);
-        if (user == null || !await userManager.CheckPasswordAsync(user, loginDto.Password))
-        {
-            logger.LogWarning("Invalid login attempt for email {Email}.", loginDto.Email);
+        var user = await _users.FindByEmailAsync(dto.Email);
+        if (user == null || !await _users.CheckPasswordAsync(user, dto.Password))
             return Result<string>.Failure("Invalid email or password.");
-        }
 
         var claims = new List<Claim>
         {
-            new(ClaimTypes.NameIdentifier, user.Id),
+            new Claim(ClaimTypes.NameIdentifier, user.Id),
             new Claim(ClaimTypes.Name, user.UserName!)
         };
-        var roles = await userManager.GetRolesAsync(user);
+
+        var roles = await _users.GetRolesAsync(user);
         claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
 
-        var jwtSection = config.GetSection("Jwt");
-        var keyBytes = Encoding.UTF8.GetBytes(jwtSection["Key"]!);
-
-        var creds = new SigningCredentials(new SymmetricSecurityKey(keyBytes), SecurityAlgorithms.HmacSha256);
-
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwt.Key));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var token = new JwtSecurityToken(
-            issuer: jwtSection["Issuer"],
-            audience: jwtSection["Audience"],
+            issuer: _jwt.Issuer,
+            audience: _jwt.Audience,
             claims: claims,
-            expires: DateTime.UtcNow.AddHours(1),
-            signingCredentials: creds
-        );
+            expires: DateTime.UtcNow.AddMinutes(_jwt.ExpiresMinutes),
+            signingCredentials: creds);
 
-        var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
-
-        return Result<string>.Success(tokenString);
+        var jwt = new JwtSecurityTokenHandler().WriteToken(token);
+        return Result<string>.Success(jwt);
     }
 }

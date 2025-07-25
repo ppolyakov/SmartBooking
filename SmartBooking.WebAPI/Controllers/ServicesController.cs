@@ -1,48 +1,65 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SmartBooking.Domain.Entities;
-using SmartBooking.WebAPI.Models;
+using SmartBooking.Shared.Dto;
 using SmartBooking.WebAPI.Services.Interfaces;
-
-namespace SmartBooking.WebAPI.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ServicesController(IServiceService serviceService) : ControllerBase
+public class ServicesController : ControllerBase
 {
+    private readonly IServiceService _svc;
+    private readonly ILogger<ServicesController> _logger;
+
+    public ServicesController(IServiceService svc, ILogger<ServicesController> logger)
+    {
+        _svc = svc;
+        _logger = logger;
+    }
+
+    /// <summary>Get all services (with no slots).</summary>
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Service>>> GetAll()
+    [ProducesResponseType(typeof(IEnumerable<ServiceDto>), 200)]
+    [ProducesResponseType(500)]
+    public async Task<ActionResult<IEnumerable<ServiceDto>>> GetAllAsync(CancellationToken ct)
     {
-        var result = await serviceService.GetAllServicesAsync();
+        var result = await _svc.GetAllAsync(ct);
         if (!result.IsSuccess)
-            return BadRequest(result.ErrorMessage);
-
-        var services = result.Value;
-        return Ok(services);
+        {
+            _logger.LogError("GetAllAsync failed: {Error}", result.ErrorMessage);
+            return StatusCode(500, new { result.ErrorMessage });
+        }
+        return Ok(result.Value);
     }
 
+    /// <summary>Create a new service.</summary>
     [HttpPost]
-    public async Task<ActionResult<Service>> Create(Service service)
+    [ProducesResponseType(typeof(ServiceDto), 201)]
+    [ProducesResponseType(400)]
+    public async Task<ActionResult<ServiceDto>> CreateAsync(
+        [FromBody] CreateServiceDto dto,
+        CancellationToken ct)
     {
-        if (service == null)
-        {
-            return BadRequest(new { Error = "Invalid service data." });
-        }
-        var result = await serviceService.CreateServiceAsync(service);
+        var result = await _svc.CreateAsync(dto, ct);
         if (!result.IsSuccess)
         {
-            return BadRequest(new { Error = result.ErrorMessage });
+            _logger.LogWarning("CreateAsync failed: {Error}", result.ErrorMessage);
+            return BadRequest(new { result.ErrorMessage });
         }
-        service = result.Value;
-        return Ok(service);
+        var created = result.Value;
+        return CreatedAtAction(nameof(GetAllAsync), null, created);
     }
 
-    [HttpGet("full")]
-    public async Task<ActionResult<List<ServiceWithSlotsDto>>> GetAllWithSlots()
+    /// <summary>Get all services with their slots and client emails.</summary>
+    [HttpGet("with-slots")]
+    [ProducesResponseType(typeof(IEnumerable<ServiceWithSlotsDto>), 200)]
+    [ProducesResponseType(500)]
+    public async Task<ActionResult<IEnumerable<ServiceWithSlotsDto>>> GetWithSlotsAsync(CancellationToken ct)
     {
-        var result = await serviceService.GetAllServicesWithSlotsAsync();
+        var result = await _svc.GetWithSlotsAsync(ct);
         if (!result.IsSuccess)
-            return BadRequest(result.ErrorMessage);
-        var servicesWithSlots = result.Value;
-        return Ok(servicesWithSlots);
+        {
+            _logger.LogError("GetWithSlotsAsync failed: {Error}", result.ErrorMessage);
+            return StatusCode(500, new { result.ErrorMessage });
+        }
+        return Ok(result.Value);
     }
 }

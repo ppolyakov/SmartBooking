@@ -2,7 +2,6 @@
 using SmartBooking.BlazorUI.Services.Interfaces;
 using SmartBooking.Shared;
 using SmartBooking.Shared.Dto;
-using SmartBooking.Shared.Http.Requests;
 using System.Net.Http.Headers;
 
 public class UserService(HttpClient http, ProtectedLocalStorage storage, ILogger<UserService> logger) : IUserService
@@ -43,7 +42,7 @@ public class UserService(HttpClient http, ProtectedLocalStorage storage, ILogger
         }
     }
 
-    public async Task<Result<bool>> CreateAsync(UserCreateRequest dto)
+    public async Task<Result<bool>> CreateAsync(UserCreateDto dto)
     {
         try
         {
@@ -65,7 +64,7 @@ public class UserService(HttpClient http, ProtectedLocalStorage storage, ILogger
         }
     }
 
-    public async Task<Result<bool>> UpdateAsync(string id, UserEditRequest dto)
+    public async Task<Result<bool>> UpdateAsync(string id, UserEditDto dto)
     {
         try
         {

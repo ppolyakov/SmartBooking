@@ -6,24 +6,65 @@
         <MudText Typo="Typo.h6">New Service</MudText>
     </TitleContent>
     <DialogContent>
-        <EditForm Context="service" Model="Service">
+        <EditForm Model="Service" OnValidSubmit="OnSave">
             <DataAnnotationsValidator />
-            <MudTextField @bind-Value="@Service.Title" Label="Title" Required="true" />
-            <MudNumericField T="int" @bind-Value="@Service.Duration" Label="Duration (minutes)" Required="true" />
+            <MudTextField For="@(() => Service.Title)"
+                          @bind-Value="Service.Title"
+                          Label="Title" />
+            <ValidationMessage For="@(() => Service.Title)" />
+
+            <MudTextField For="@(() => Service.Description)"
+                          @bind-Value="Service.Description"
+                          Label="Description" />
+            <ValidationMessage For="@(() => Service.Description)" />
+
+            <MudNumericField For="@(() => Service.Price)"
+                             @bind-Value="Service.Price"
+                             Label="Price" />
+            <ValidationMessage For="@(() => Service.Price)" />
+
+            <MudDatePicker For="@(() => Service.Date)"
+                           @bind-Value="Service.Date"
+                           Label="Date" />
+            <ValidationMessage For="@(() => Service.Date)" />
+
+            <MudNumericField For="@(() => Service.Duration)"
+                             @bind-Value="Service.Duration"
+                             Label="Duration (minutes)" />
+            <ValidationMessage For="@(() => Service.Duration)" />
         </EditForm>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="() => MudDialog.Close(DialogResult.Ok(true))" Color="Color.Primary">Save</MudButton>
+        <MudButton ButtonType="ButtonType.Submit" Color="Color.Primary">Save</MudButton>
         <MudButton OnClick="() => MudDialog.Cancel()" Color="Color.Secondary">Cancel</MudButton>
     </DialogActions>
 </MudDialog>
 
 @code {
-
-    private ServiceDto _service = new ServiceDto();
     [Parameter]
     public ServiceDto Service { get; set; } = new ServiceDto();
 
     [CascadingParameter]
     private IMudDialogInstance MudDialog { get; set; }
+
+    private async Task OnSave()
+    {
+        try
+        {
+            var result = await ServiceService.CreateServiceAsync(Service);
+            if (result.IsSuccess)
+            {
+                Snackbar.Add("Service created successfully", Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                Snackbar.Add($"Error creating service: {result.ErrorMessage}", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Unexpected error: {ex.Message}", Severity.Error);
+        }
+    }
 }

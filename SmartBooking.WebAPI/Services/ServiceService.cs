@@ -6,62 +6,98 @@ using SmartBooking.Shared;
 using SmartBooking.Shared.Dto;
 using SmartBooking.WebAPI.Services.Interfaces;
 
-namespace SmartBooking.WebAPI.Services;
-
 public class ServiceService(AppDbContext db, UserManager<ApplicationUser> userManager, ILogger<ServiceService> logger) : IServiceService
 {
-    public async Task<Result<Service>> CreateServiceAsync(Service service)
+    private readonly AppDbContext _db = db;
+    private readonly UserManager<ApplicationUser> _userManager = userManager;
+    private readonly ILogger<ServiceService> _logger = logger;
+
+    public async Task<Result<IEnumerable<ServiceDto>>> GetAllAsync(CancellationToken ct = default)
     {
         try
         {
-            db.Services.Add(service);
-            await db.SaveChangesAsync();
-            return Result<Service>.Success(service);
+            var items = await _db.Services
+                .AsNoTracking()
+                .ToListAsync(ct);
+
+            var dtos = items.Select(s => new ServiceDto
+            {
+                Id = s.Id,
+                Title = s.Title,
+                Duration = s.Duration,
+                Date = s.Date,
+                Description = s.Description,
+                Price = s.Price
+            });
+
+            _logger.LogInformation("Retrieved {Count} services.", dtos.Count());
+            return Result<IEnumerable<ServiceDto>>.Success(dtos);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error creating service.");
-            return Result<Service>.Failure($"Error creating service: {ex.Message}");
+            _logger.LogError(ex, "Error in GetAllAsync");
+            return Result<IEnumerable<ServiceDto>>.Failure("Could not load services.");
         }
     }
 
-    public async Task<Result<IEnumerable<Service>>> GetAllServicesAsync()
+    public async Task<Result<ServiceDto>> CreateAsync(CreateServiceDto dto, CancellationToken ct = default)
     {
         try
         {
-            var services = await db.Services
-                    .Include(s => s.TimeSlots)
-                    .ToListAsync();
-            return Result<IEnumerable<Service>>.Success(services);
+            var entity = new Service
+            {
+                Title = dto.Title,
+                Duration = dto.Duration,
+                Date = dto.Date,
+                Description = dto.Description,
+                Price = dto.Price
+            };
+
+            _db.Services.Add(entity);
+            await _db.SaveChangesAsync(ct);
+
+            var result = new ServiceDto
+            {
+                Id = entity.Id,
+                Title = entity.Title,
+                Duration = entity.Duration,
+                Date = entity.Date,
+                Description = entity.Description,
+                Price = entity.Price
+            };
+
+            _logger.LogInformation("Created Service {Id}.", entity.Id);
+            return Result<ServiceDto>.Success(result);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error retrieving services.");
-            return Result<IEnumerable<Service>>.Failure($"Error retrieving services: {ex.Message}");
+            _logger.LogError(ex, "Error in CreateAsync");
+            return Result<ServiceDto>.Failure("Could not create service.");
         }
     }
 
-    public async Task<Result<List<ServiceWithSlotsDto>>> GetAllServicesWithSlotsAsync()
+    public async Task<Result<IEnumerable<ServiceWithSlotsDto>>> GetWithSlotsAsync(CancellationToken ct = default)
     {
         try
         {
-            var services = await db.Services
-            .Include(s => s.TimeSlots)
+            var services = await _db.Services
+                .Include(s => s.TimeSlots)
                 .ThenInclude(ts => ts.Booking)
-            .ToListAsync();
+                .AsNoTracking()
+                .ToListAsync(ct);
 
             var result = new List<ServiceWithSlotsDto>(services.Count);
 
             foreach (var service in services)
             {
-                // Для каждого слота собираем информацию о клиенте, если забронировано
                 var slots = new List<TimeSlotWithClientDto>(service.TimeSlots.Count);
+
                 foreach (var ts in service.TimeSlots.OrderBy(ts => ts.StartTime))
                 {
                     string? email = null;
-                    if (ts.Booking != null)
+                    if (ts.Booking is not null)
                     {
-                        var user = await userManager.FindByIdAsync(ts.Booking.UserId.ToString());
+                        var user = await _userManager.FindByIdAsync(ts.Booking.UserId.ToString());
                         email = user?.Email;
                     }
 
@@ -86,12 +122,13 @@ public class ServiceService(AppDbContext db, UserManager<ApplicationUser> userMa
                 });
             }
 
-            return Result<List<ServiceWithSlotsDto>>.Success(result);
+            _logger.LogInformation("Retrieved {Count} services with slots.", result.Count);
+            return Result<IEnumerable<ServiceWithSlotsDto>>.Success(result);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error retrieving services with slots.");
-            return Result<List<ServiceWithSlotsDto>>.Failure($"Error retrieving services with slots: {ex.Message}");
+            _logger.LogError(ex, "Error retrieving services with slots.");
+            return Result<IEnumerable<ServiceWithSlotsDto>>.Failure("Error retrieving services with slots.");
         }
     }
 }

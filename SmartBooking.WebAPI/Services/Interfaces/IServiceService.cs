@@ -6,7 +6,7 @@ namespace SmartBooking.WebAPI.Services.Interfaces;
 
 public interface IServiceService
 {
-    Task<Result<IEnumerable<Service>>> GetAllServicesAsync();
-    Task<Result<Service>> CreateServiceAsync(Service service);
-    Task<Result<List<ServiceWithSlotsDto>>> GetAllServicesWithSlotsAsync();
+    Task<Result<IEnumerable<ServiceDto>>> GetAllAsync(CancellationToken ct = default);
+    Task<Result<ServiceDto>> CreateAsync(CreateServiceDto dto, CancellationToken ct = default);
+    Task<Result<IEnumerable<ServiceWithSlotsDto>>> GetWithSlotsAsync(CancellationToken ct = default);
 }

@@ -78,7 +78,7 @@ public class ServiceService(HttpClient httpClient, ILogger<ServiceService> logge
     {
         try
         {
-            var servicesWithSlots = await httpClient.GetFromJsonAsync<List<ServiceWithSlotsDto>>("services/full");
+            var servicesWithSlots = await httpClient.GetFromJsonAsync<List<ServiceWithSlotsDto>>("services/with-slots");
             if (servicesWithSlots == null)
             {
                 logger.LogWarning("No services with slots found.");

@@ -1,5 +1,4 @@
-﻿using SmartBooking.BlazorUI.Helpers;
-using SmartBooking.BlazorUI.Services.Interfaces;
+﻿using SmartBooking.BlazorUI.Services.Interfaces;
 using SmartBooking.BlazorUI.Services.Provider;
 using SmartBooking.Shared;
 using SmartBooking.Shared.Http.Requests;
@@ -11,7 +10,7 @@ public class AuthService(HttpClient httpClient, JwtAuthStateProvider jwtAuthStat
 {
     public async Task<Result<bool>> LoginAsync(LoginRequest request)
     {
-        try 
+        try
         {
             var response = await httpClient.PostAsJsonAsync("auth/login", request);
             response.EnsureSuccessStatusCode();
@@ -38,19 +37,19 @@ public class AuthService(HttpClient httpClient, JwtAuthStateProvider jwtAuthStat
 
     public async Task<Result<bool>> RegisterAsync(RegisterRequest request)
     {
-        try 
+        try
         {
             var response = await httpClient.PostAsJsonAsync("auth/register", request);
             response.EnsureSuccessStatusCode();
             logger.LogInformation("User registered successfully.");
             return Result<bool>.Success(true);
         }
-        catch (HttpRequestException ex) 
+        catch (HttpRequestException ex)
         {
             logger.LogError(ex, "Error during registration.");
             return Result<bool>.Failure("Registration failed");
         }
-        catch (Exception e) 
+        catch (Exception e)
         {
             logger.LogError(e, "Unexpected error during registration.");
             return Result<bool>.Failure("Unexpected error during registration");

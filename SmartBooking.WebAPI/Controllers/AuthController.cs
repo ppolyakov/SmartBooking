@@ -2,49 +2,52 @@
 using SmartBooking.WebAPI.Models;
 using SmartBooking.WebAPI.Services.Interfaces;
 
-namespace SmartBooking.WebAPI.Controllers;
-
 [ApiController]
 [Route("api/[controller]")]
-public class AuthController(IAuthService authService) : ControllerBase
+public class AuthController : ControllerBase
 {
-    /// <summary>
-    /// Registers a new user and assigns them the Admin role.
-    /// </summary>
-    [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] RegisterDto dto)
-    {
-        if (dto == null)
-        {
-            return BadRequest(new { Error = "Invalid registration data." });
-        }
+    private readonly IAuthService _authService;
+    private readonly ILogger<AuthController> _logger;
 
-        var result = await authService.RegisterAsync(dto);
-        if (!result.IsSuccess)
-        {
-            return BadRequest(new { Error = result.ErrorMessage });
-        }
-        return Ok(new { Message = "Registration successful." });
+    public AuthController(IAuthService authService, ILogger<AuthController> logger)
+    {
+        _authService = authService;
+        _logger = logger;
     }
 
-    /// <summary>
-    /// Authenticates a user and returns a JWT token.
-    /// </summary>
-    [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginDto dto)
+    /// <summary>Register a new user with User role.</summary>
+    [HttpPost("register")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Register([FromBody] RegisterDto dto, CancellationToken ct)
     {
-        if (dto == null)
-        {
-            return BadRequest(new { Error = "Invalid login data." });
-        }
-
-        var result = await authService.LoginAsync(dto);
+        var result = await _authService.RegisterAsync(dto, ct);
 
         if (!result.IsSuccess)
         {
-            return BadRequest(new { Error = result.ErrorMessage });
+            _logger.LogWarning("Registration failed for {Email}: {Error}", dto.Email, result.ErrorMessage);
+
+            return BadRequest(new { result.ErrorMessage });
         }
 
-        return Ok(new { Token = result.Value });
+        return StatusCode(StatusCodes.Status201Created);
+    }
+
+    /// <summary>Authenticate and receive a JWT.</summary>
+    [HttpPost("login")]
+    [ProducesResponseType(typeof(TokenResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Login([FromBody] LoginDto dto, CancellationToken ct)
+    {
+        var result = await _authService.LoginAsync(dto, ct);
+
+        if (!result.IsSuccess)
+        {
+            _logger.LogWarning("Invalid login attempt for {Email}: {Error}", dto.Email, result.ErrorMessage);
+
+            return Unauthorized(new { result.ErrorMessage });
+        }
+
+        return Ok(new TokenResponseDto(result.Value));
     }
 }

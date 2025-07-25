@@ -58,7 +58,7 @@
 
         if (IsNew)
         {
-            var requestEdit = new UserCreateRequest
+            var requestEdit = new UserCreateDto
             {
                 Email = userEditRequestModel.Email,
                 Password = userEditRequestModel.Password,
@@ -73,12 +73,12 @@
             else
             {
                 Snackbar.Add("User created", Severity.Success);
-                MudDialog.Close(DialogResult.Ok(true));
+                MudDialog.Close(DialogResult.Ok(resultCreate.Value));
             }
         }
         else
         {
-            var requestEdit = new UserEditRequest
+            var requestEdit = new UserEditDto
             {
                 Email = userEditRequestModel.Email,
                 IsAdmin = userEditRequestModel.IsAdmin

@@ -7,90 +7,84 @@ using SmartBooking.Shared.Dto;
 using SmartBooking.Shared.Http.Requests;
 using SmartBooking.WebAPI.Services.Interfaces;
 
-namespace SmartBooking.WebAPI.Services;
-
 public class BookingService(AppDbContext db, UserManager<ApplicationUser> userManager, ILogger<BookingService> logger) : IBookingService
 {
-    public async Task<Result<Booking>> CreateBookingAsync(BookSlotRequest request)
+    private readonly AppDbContext _db = db;
+    private readonly UserManager<ApplicationUser> _userManager = userManager;
+    private readonly ILogger<BookingService> _logger = logger;
+
+    public async Task<Result<BookingDto>> CreateBookingAsync(BookSlotRequest request, CancellationToken ct = default)
     {
-        try
+        // 1) Validate user
+        var user = await _userManager.FindByIdAsync(request.UserId.ToString());
+        if (user == null)
+            return Result<BookingDto>.Failure("User not found.");
+
+        // 2) Validate slot
+        var slot = await _db.TimeSlots
+            .Include(ts => ts.Booking)
+            .Include(ts => ts.Service)
+            .FirstOrDefaultAsync(ts => ts.Id == request.SlotId, ct);
+
+        if (slot == null)
+            return Result<BookingDto>.Failure("Time slot not found.");
+
+        if (slot.Booking != null)
+            return Result<BookingDto>.Failure("Time slot already booked.");
+
+        // 3) Create booking
+        var booking = new Booking
         {
-            var user = await userManager.FindByIdAsync(request.UserId.ToString());
-            if (user == null)
-            {
-                logger.LogWarning("User with ID {UserId} not found.", request.UserId);
-                return Result<Booking>.Failure("User not found.");
-            }
+            UserId = request.UserId,
+            TimeSlotId = slot.Id
+        };
+        _db.Bookings.Add(booking);
+        await _db.SaveChangesAsync(ct);
 
-            var slot = await db.TimeSlots
-                .Include(s => s.Booking)
-                .FirstOrDefaultAsync(s => s.Id == request.SlotId);
+        _logger.LogInformation("User {UserId} booked slot {SlotId} (BookingId={BookingId}).",
+            user.Id, slot.Id, booking.Id);
 
-            if (slot == null)
-            {
-                logger.LogWarning("TimeSlot with ID {SlotId} not found.", request.SlotId);
-                return Result<Booking>.Failure("TimeSlot not found.");
-            }
-
-            if (slot.Booking != null)
-            {
-                logger.LogWarning("TimeSlot with ID {SlotId} is already booked.", request.SlotId);
-                return Result<Booking>.Failure("TimeSlot is already booked.");
-            }
-
-            var booking = new Booking
-            {
-                UserId = request.UserId,
-                TimeSlotId = request.SlotId
-            };
-            db.Bookings.Add(booking);
-            await db.SaveChangesAsync();
-
-            return Result<Booking>.Success(booking);
-        }
-        catch (Exception ex)
+        // 4) Map to DTO
+        var dto = new BookingDto
         {
-            logger.LogError(ex, "Error creating booking.");
-            return Result<Booking>.Failure($"Error creating booking: {ex.Message}");
-        }
+            Id = booking.Id,
+            StartTime = slot.StartTime,
+            ServiceTitle = slot.Service.Title,
+            ClientName = user.UserName!,
+            ClientEmail = user.Email!
+        };
+
+        return Result<BookingDto>.Success(dto);
     }
 
-    public async Task<Result<IEnumerable<BookingDto>>> GetAllBookingsAsync()
+    public async Task<Result<IEnumerable<BookingDto>>> GetAllBookingsAsync(CancellationToken ct = default)
     {
-        try
-        {
-            var bookings = await db.Bookings
+        var bookings = await _db.Bookings
                     .Include(b => b.TimeSlot)
                     .ThenInclude(ts => ts.Service)
                     .ToListAsync();
 
-            var result = new List<BookingDto>();
-            foreach (var b in bookings)
-            {
-                var user = await userManager.FindByIdAsync(b.UserId.ToString());
-                result.Add(new BookingDto
-                {
-                    Id = b.Id,
-                    StartTime = b.TimeSlot.StartTime,
-                    ServiceTitle = b.TimeSlot.Service.Title,
-                    ClientName = user?.UserName ?? "(unknown)",
-                    ClientEmail = user?.Email ?? "(unknown)"
-                });
-            }
-
-            if (result.Count == 0)
-            {
-                logger.LogInformation("No bookings found.");
-                return Result<IEnumerable<BookingDto>>.Success(new List<BookingDto>());
-            }
-
-            logger.LogInformation("Retrieved {Count} bookings.", result.Count);
-            return Result<IEnumerable<BookingDto>>.Success(result);
-        }
-        catch (Exception ex)
+        var result = new List<BookingDto>();
+        foreach (var b in bookings)
         {
-            logger.LogError(ex, "Error retrieving bookings.");
-            return Result<IEnumerable<BookingDto>>.Failure($"Error retrieving bookings: {ex.Message}");
+            var user = await _userManager.FindByIdAsync(b.UserId.ToString());
+            result.Add(new BookingDto
+            {
+                Id = b.Id,
+                StartTime = b.TimeSlot.StartTime,
+                ServiceTitle = b.TimeSlot.Service.Title,
+                ClientName = user?.UserName ?? "(unknown)",
+                ClientEmail = user?.Email ?? "(unknown)"
+            });
         }
+
+        if (result.Count == 0)
+        {
+            _logger.LogInformation("No bookings found.");
+            return Result<IEnumerable<BookingDto>>.Success(new List<BookingDto>());
+        }
+
+        _logger.LogInformation("Retrieved {Count} bookings.", result.Count);
+        return Result<IEnumerable<BookingDto>>.Success(result);
     }
 }
